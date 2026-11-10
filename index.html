@@ -237,7 +237,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
       <kbd>R</kbd><span>Nachladen</span>
       <kbd>1 – 5</kbd><span>AEG · SMG · LMG · Sniper · Shotgun</span>
       <kbd>Tab</kbd><span>Grosse Karte</span>
-      <kbd>Esc</kbd><span>Pause</span>
+      <kbd>Esc</kbd><span>Pause (als Host: Runde oder Match beenden)</span>
     </div>
   </section>
 
@@ -318,6 +318,11 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <h2>Pause</h2>
     <p class="note" id="pauseNote">Klick auf „Weiter“, um die Maus wieder einzufangen.</p>
     <button class="btn pri" id="bResume">Weiter</button>
+    <div id="hostCtl" class="col" hidden>
+      <h3>Host</h3>
+      <button class="btn sm" id="bEndRound">Runde beenden <small>Team mit mehr Überlebenden bekommt den Punkt</small></button>
+      <button class="btn sm" id="bEndMatch">Match beenden <small>Alle zurück in den Raum</small></button>
+    </div>
     <div class="field"><label for="inSens2">Maus-Empfindlichkeit</label><input type="range" id="inSens2" min="0.2" max="3" step="0.05"></div>
     <button class="btn" id="bQuit">Zum Hauptmenü</button>
   </div>
@@ -337,7 +342,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const BUILD_VERSION='1794338952945';
+const BUILD_VERSION='1794339408557';
 'use strict';
 // ================= UTIL =================
 const TAU=Math.PI*2;
@@ -1475,7 +1480,7 @@ const flightTime=(wi,d)=>WPN[wi].tof[clamp(d|0,1,169)];
 
 // ================= STATE =================
 const RAD=.33,H_ST=1.75,H_CR=1.15,EYE_ST=1.6,EYE_CR=1.05,GRAV=22,JUMP=7.3;
-const G={alive:[50,50],late:false,mode:'menu',world:null,nav:null,mapIdx:0,diff:1,rtw:2,myTeam:0,myWpn:0,E:[],me:null,phase:'none',phaseT:0,round:0,score:[0,0],timeLeft:0,time:0,playStart:0,
+const G={alive:[50,50],late:false,hostEnded:-1,mode:'menu',world:null,nav:null,mapIdx:0,diff:1,rtw:2,myTeam:0,myWpn:0,E:[],me:null,phase:'none',phaseT:0,round:0,score:[0,0],timeLeft:0,time:0,playStart:0,
   postF:[],huntF:[null,null],huntT:0,huntTeam:0,timeScale:1,paused:false,seed:1,specIdx:-1,specT:0,lastBeep:0,stats:{kills:0,shots:0,hits:0},deathInfo:null,roundWinner:-1,matchOver:false};
 const WORLDS=[],NAVS=[];
 function getWorld(i){if(!WORLDS[i])WORLDS[i]=new World(MAPS[i]);return WORLDS[i]}
@@ -1969,7 +1974,7 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
   buildPresence(){
     const p={v:2,nm:this.name,tm:this.team,w:this.wpn,hs:this.host?1:null};
     if(this.host){
-      Object.assign(p,{st:this.hostState(),mp:this.settings.map,df:this.settings.diff,rw:this.settings.rtw,rn:G.round,sc:G.score,tl:Math.ceil(G.timeLeft),pt:Math.ceil(G.phaseT),sd:G.seed,wn:G.roundWinner});
+      Object.assign(p,{st:this.hostState(),mp:this.settings.map,df:this.settings.diff,rw:this.settings.rtw,rn:G.round,sc:G.score,tl:Math.ceil(G.timeLeft),pt:Math.ceil(G.phaseT),sd:G.seed,wn:G.roundWinner,hb:G.hostEnded===G.round?G.round:null});
       if(this.inGame){
         const bots=this.bots;let s='';for(const e of bots)s+=encEnt(e);
         p.nb=bots.length;for(let k=0;k<4;k++)p['b'+k]=s.slice(k*ENT_LEN*25,(k+1)*ENT_LEN*25);
@@ -2062,11 +2067,11 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
     // client: follow host state
     if(!isHost){
       const h=this.hostP;if(!h)return;
-      if(h.st==='lobby'){this.inGame=false;toMenu();showScreen('s-room');renderRoom();return}
+      if(h.st==='lobby'){if(this.lastHostSt!=='over')toast('Der Host hat das Match beendet.');this.inGame=false;toMenu();showScreen('s-room');renderRoom();return}
       if(h.rn!==G.round&&(h.st==='cd'||h.st==='play')&&h.nb)this.clientRound(h);
       if(G.round<0)return;
       G.phase=h.st==='cd'?'countdown':h.st==='play'?'play':'end';
-      if(h.st!==this.lastHostSt){if(h.st==='play')AU.play('whistle');if(h.st==='end'||h.st==='over'){G.score=h.sc||G.score;G.roundWinner=h.wn;G.matchOver=h.st==='over';showRoundOver()}this.lastHostSt=h.st}
+      if(h.st!==this.lastHostSt){if(h.st==='play')AU.play('whistle');if(h.st==='end'||h.st==='over'){G.score=h.sc||G.score;G.roundWinner=h.wn;G.matchOver=h.st==='over';G.hostEnded=h.hb===G.round?G.round:-1;showRoundOver()}this.lastHostSt=h.st}
       G.timeLeft=h.tl||0;G.phaseT=h.pt||0;G.score=h.sc||G.score;
       // bots
       const s=(h.b0||'')+(h.b1||'')+(h.b2||'')+(h.b3||'');
@@ -2203,7 +2208,7 @@ function showRoundOver(){
   const w=G.roundWinner;$('roundov').hidden=false;
   $('rTag').textContent=G.matchOver?'Match vorbei':'Runde '+G.round+' vorbei';
   const t=$('rTitle');t.textContent=w<0?'Unentschieden':(TEAMN[w]+(G.matchOver?' gewinnt das Match':' holt die Runde'));t.style.color=w<0?'var(--sand)':w===0?'var(--blue)':'var(--red)';
-  $('rSub').textContent='Stand '+G.score[0]+' : '+G.score[1]+(G.matchOver?'':' · Erstes Team mit '+G.rtw+' Runden gewinnt');
+  $('rSub').textContent='Stand '+G.score[0]+' : '+G.score[1]+(G.matchOver?'':' · Erstes Team mit '+G.rtw+' Runden gewinnt')+(G.hostEnded===G.round?(G.mode==='sp'||G.mode==='host'?' · Du hast die Runde beendet.':' · Der Host hat die Runde beendet.'):'');
   const me=G.me;const mine=me&&w>=0?(me.team===w?'Dein Team hat gewonnen.':'Dein Team hat verloren.'):'';
   $('rstats').innerHTML='';const add=(l,v)=>{const d=document.createElement('div');d.append(l);const b=document.createElement('b');b.textContent=v;d.append(b);$('rstats').append(d)};
   add('Deine Treffer diese Runde',me?me.kills:0);add('Überlebende',aliveCounts().join(' : '));
@@ -2410,7 +2415,8 @@ document.addEventListener('pointerlockchange',()=>{
   if(INP.locked){$('pause').hidden=true;G.paused=false}
 });
 document.addEventListener('pointerlockerror',()=>{INP.free=true;hint('Maus konnte nicht eingefangen werden: bewege sie direkt über dem Bild.',4)});
-function openPause(){$('pause').hidden=false;if(G.mode==='sp')G.paused=true;$('pauseNote').textContent=G.mode==='sp'?'Das Spiel ist pausiert.':'Im Multiplayer läuft das Spiel weiter.';$('inSens2').value=SET.sens;INP.lmb=INP.rmb=false;INP.k={}}
+function openPause(){const hc=G.mode==='sp'||G.mode==='host';$('hostCtl').hidden=!hc;$('bEndMatch').hidden=G.mode!=='host';$('bEndMatch').firstChild.textContent='Match beenden ';endMatchArm=0;
+  $('bEndRound').disabled=!(G.phase==='play'||G.phase==='countdown');$('pause').hidden=false;if(G.mode==='sp')G.paused=true;$('pauseNote').textContent=G.mode==='sp'?'Das Spiel ist pausiert.':'Im Multiplayer läuft das Spiel weiter.';$('inSens2').value=SET.sens;INP.lmb=INP.rmb=false;INP.k={}}
 cv.addEventListener('mousedown',ev=>{
   if(G.mode==='menu')return;AU.init();
   if(!INP.locked&&!INP.free){requestLock();return}
@@ -2437,6 +2443,11 @@ function applyLook(){
 }
 function resumeGame(){$('pause').hidden=true;G.paused=false;if(!INP.free)requestLock()}
 $('bResume').onclick=resumeGame;
+let endMatchArm=0;
+function hostEndRound(){if(!(G.mode==='sp'||G.mode==='host')||!(G.phase==='play'||G.phase==='countdown'))return;const c=aliveCounts();G.hostEnded=G.round;endRound(c[0]>c[1]?0:c[1]>c[0]?1:-1);resumeGame()}
+function hostEndMatch(){if(G.mode!=='host')return;NET.inGame=false;G.matchOver=false;toMenu();showScreen('s-room');renderRoom();NET.push()}
+$('bEndRound').onclick=hostEndRound;
+$('bEndMatch').onclick=()=>{const b=$('bEndMatch');if(performance.now()-endMatchArm>3000){endMatchArm=performance.now();b.firstChild.textContent='Wirklich beenden? Nochmal klicken ';return}endMatchArm=0;hostEndMatch()};
 $('bQuit').onclick=()=>{if(NET.gr){NET.leave()}else{toMenu();showScreen('s-main')}};
 $('bSpecNext').onclick=ev=>{ev.stopPropagation();specNext()};
 $('bSpeed').onclick=ev=>{ev.stopPropagation();G.timeScale=G.timeScale===1?2:G.timeScale===2?4:1;$('bSpeed').textContent='Zeitraffer ×'+G.timeScale};
