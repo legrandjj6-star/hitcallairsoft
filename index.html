@@ -329,6 +329,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
+const BUILD_VERSION='1794338596017';
 'use strict';
 // ================= UTIL =================
 const TAU=Math.PI*2;
@@ -2484,7 +2485,16 @@ function frame(t){
   const jm=/^#join-([a-z0-9]{3,6})$/.exec(location.hash);if(jm){$('inCode').value=jm[1];showScreen('s-mp');toast('Gib deinen Namen ein und klick auf „Beitreten“.')}
   requestAnimationFrame(frame);
   NET.init();
+  checkForUpdate();
 })();
+// website: browsers may keep an old copy for ~10 min; load the newest build automatically (only from the main menu at startup)
+function checkForUpdate(){
+  if(window.claude||!/^https?:$/.test(location.protocol)||typeof BUILD_VERSION==='undefined')return;
+  fetch(location.pathname+'?vc='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{
+    const m=/BUILD_VERSION='(\d+)'/.exec(t);if(!m||m[1]===BUILD_VERSION||location.search.indexOf('v='+m[1])>=0||G.mode!=='menu'||NET.gr)return;
+    location.replace(location.pathname+'?v='+m[1]+location.hash);
+  }).catch(()=>{});
+}
 
 </script>
 </body>
