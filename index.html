@@ -261,9 +261,9 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
       <div class="field"><label for="inCode">Raum-Code</label>
         <div class="row"><input type="text" id="inCode" maxlength="6" placeholder="z.B. k3f9a" style="max-width:180px"><button class="btn sm" id="bJoin">Beitreten</button></div>
       </div>
-      <h3>Offene Räume</h3>
+      <h3 id="roomsH">Offene Räume</h3>
       <div class="rooms" id="roomList"><div class="note">Noch keine offenen Räume. Erstelle einen und schick deinen Freunden den Code.</div></div>
-      <p class="note">Freie Plätze füllen Bots auf, es bleibt immer 50 gegen 50. Mitspieler brauchen Zugriff auf dieses Artifact und müssen bei claude.ai angemeldet sein.</p>
+      <p class="note" id="mpNote">Freie Plätze füllen Bots auf, es bleibt immer 50 gegen 50.</p>
     </div>
   </section>
 
@@ -271,6 +271,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
   <section class="scr" id="s-room" hidden>
     <button class="back" id="bLeave">← Raum verlassen</button>
     <div class="row" style="align-items:baseline;justify-content:space-between"><h2>Raum</h2><span class="code" id="roomCode">-----</span></div>
+    <button class="btn sm" id="bCopyLink" hidden>Einladungslink kopieren <small>an Freunde schicken</small></button>
     <div class="teams">
       <div class="teamb t0"><h4>BLAU</h4><div id="listA"></div></div>
       <div class="teamb t1"><h4>ROT</h4><div id="listB"></div></div>
@@ -326,6 +327,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 <div id="loading" hidden>Karte wird gebaut …</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 'use strict';
 // ================= UTIL =================
@@ -1607,6 +1609,72 @@ function playerUpdate(e,dt){
 function playerSpread(e){const wp=WPN[e.wpn];const ads=INP.rmb&&e.reloadT<=0;let s=ads?wp.ads:wp.hip;const sp=Math.hypot(e.vx,e.vz);s+=Math.max(0,sp-1.5)/6*(ads?.0015:.006);if(!e.ground)s+=.02;if(e.crouch)s*=.7;return s}
 function switchWeapon(w){const e=G.me;if(!e||!e.alive||e.wpn===w)return;if(!e.mags)e.mags=WPN.map(x=>x.mag);e.mags[e.wpn]=e.mag;e.wpn=w;e.mag=e.mags[w];e.reloadT=0;e.switchT=.55;charColors(e.idx,e.team,e.skin,w);AU.play('empty')}
 
+// ================= P2P ROOMS (website build: WebRTC via PeerJS) =================
+// Mimics the subset of the claude.ai `room` API that NET uses (join / presence / peers / onPeers / leave).
+// Star topology: the room creator is the hub and relays every presence to all other players.
+function makeP2PRoom(){
+  return{p2p:true,presence:()=>Promise.resolve(),peers:()=>Object.freeze([]),onPeers:()=>()=>{},join:(name,opt)=>joinP2P(name,opt||{})};
+}
+function joinP2P(name,opt){
+  return new Promise((resolve,reject)=>{
+    const code=String(name).replace(/^hc-/,'');const hubId='hitcall-'+code+'-hub';
+    const S={peers:new Map(),cbs:[],errs:[],snap:Object.freeze([]),dirty:true,me:null,closed:false,isHub:!!opt.create,conns:new Map(),hub:null,settled:false};
+    let peer;
+    try{peer=S.isHub?new Peer(hubId,{debug:0}):new Peer({debug:0})}catch(e){reject({code:'not_granted',message:'WebRTC fehlt'});return}
+    const fail=(code,msg)=>{if(S.settled)return;S.settled=true;clearTimeout(timer);try{peer.destroy()}catch(e){}reject({code,message:msg})};
+    const timer=setTimeout(()=>fail('timeout','Zeitüberschreitung'),20000);
+    const snapshot=()=>{if(S.dirty){S.snap=Object.freeze([...S.peers].map(([pid,v])=>Object.freeze({peer:pid,by:null,isMe:pid===S.me,sameTab:pid===S.me,kind:'viewer',guest:false,presence:v.presence,updatedAt:v.updatedAt})));S.dirty=false}return S.snap};
+    let pend=false;const notify=()=>{if(pend)return;pend=true;queueMicrotask(()=>{pend=false;const ps=snapshot();for(const f of S.cbs)try{f({peers:ps,joined:[],left:[],updated:[]})}catch(e){}})};
+    const setP=(pid,pr)=>{if(!pr||typeof pr!=='object')return;S.peers.set(pid,{presence:Object.freeze(pr),updatedAt:Date.now()});S.dirty=true};
+    const lost=(code)=>{if(S.closed)return;S.closed=true;for(const f of S.errs)try{f({code:code||'upstream_error',message:'Verbindung verloren'})}catch(e){}};
+    const send=(c,m)=>{try{if(c&&c.open)c.send(m)}catch(e){}};
+    const api={name,
+      presence(patch){
+        if(S.closed||!S.me)return Promise.resolve();
+        const np=Object.assign({},S.peers.get(S.me).presence);for(const k in patch){if(patch[k]===null)delete np[k];else np[k]=patch[k]}
+        setP(S.me,np);
+        if(S.isHub){for(const c of S.conns.values())send(c,{t:'p',peer:S.me,presence:np})}else send(S.hub,{t:'p',presence:np});
+        notify();return Promise.resolve();
+      },
+      peers:snapshot,
+      onPeers(fn,onErr){S.cbs.push(fn);if(onErr)S.errs.push(onErr);setTimeout(()=>fn({peers:snapshot(),joined:snapshot(),left:[],updated:[]}),0);return()=>{S.cbs=S.cbs.filter(x=>x!==fn)}},
+      connected(){return!S.closed},
+      leave(){S.closed=true;try{peer.destroy()}catch(e){}return Promise.resolve()}
+    };
+    peer.on('open',id=>{
+      S.me=id;setP(id,{});
+      if(S.isHub){S.settled=true;clearTimeout(timer);resolve(api);return}
+      const c=peer.connect(hubId,{reliable:true,serialization:'json'});S.hub=c;
+      c.on('open',()=>{if(S.settled)return;S.settled=true;clearTimeout(timer);send(c,{t:'p',presence:S.peers.get(S.me).presence});resolve(api)});
+      c.on('data',m=>{if(!m)return;
+        if(m.t==='s'){for(const[pid,pr]of m.peers)if(pid!==S.me)setP(pid,pr)}
+        else if(m.t==='p'&&m.peer&&m.peer!==S.me)setP(m.peer,m.presence);
+        else if(m.t==='l'){S.peers.delete(m.peer);S.dirty=true}
+        notify()});
+      c.on('close',()=>{fail('not_found','Raum nicht gefunden');lost('upstream_error')});
+      c.on('error',()=>{fail('not_found','Raum nicht gefunden');lost('upstream_error')});
+    });
+    peer.on('connection',c=>{
+      if(!S.isHub){c.close();return}
+      c.on('open',()=>{
+        S.conns.set(c.peer,c);const snap=[];for(const[pid,v]of S.peers)snap.push([pid,v.presence]);send(c,{t:'s',peers:snap});
+        setP(c.peer,{});notify();
+      });
+      c.on('data',m=>{if(!m||m.t!=='p'||!m.presence||typeof m.presence!=='object')return;setP(c.peer,m.presence);
+        for(const[pid,o]of S.conns)if(pid!==c.peer)send(o,{t:'p',peer:c.peer,presence:m.presence});notify()});
+      const gone=()=>{if(!S.conns.has(c.peer))return;S.conns.delete(c.peer);S.peers.delete(c.peer);S.dirty=true;for(const o of S.conns.values())send(o,{t:'l',peer:c.peer});notify()};
+      c.on('close',gone);c.on('error',gone);
+    });
+    // keep the hub reachable for new joiners if the signalling socket drops (open games keep running either way)
+    peer.on('disconnected',()=>{if(!S.closed&&!peer.destroyed){try{peer.reconnect()}catch(e){}}});
+    peer.on('error',err=>{const t=err&&err.type;
+      if(t==='unavailable-id')fail('taken','Code vergeben');
+      else if(t==='peer-unavailable')fail('not_found','Raum nicht gefunden');
+      else if(t==='browser-incompatible')fail('not_granted','WebRTC fehlt');
+      else fail('upstream_error',t||'Fehler');});
+  });
+}
+
 // ================= NETWORK (artifact room presence) =================
 const B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 const B64I=new Int16Array(128);for(let i=0;i<64;i++)B64I[B64.charCodeAt(i)]=i;
@@ -1628,9 +1696,11 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
   settings:{map:0,diff:1,rtw:2},seq:0,rings:{sh:[],hh:[],bs:[],kf:[],bh:[]},myDeath:null,lastSeq:new Map(),humans:new Map(),bots:[],
   hostPeer:null,hostP:null,sendT:0,lobbyT:0,noHostT:0,lastHostRound:-1,lastHostSt:'',
   async init(){
-    try{if(!window.claude||typeof window.claude.use!=='function'){this.ok=false;updateMpScreen();return}
-      const r=await window.claude.use('room');if(!r){this.ok=false;updateMpScreen();return}
-      this.room=r;this.ok=true;r.onPeers(()=>{if(!this.gr)renderRoomList()},()=>{this.ok=false;updateMpScreen()});
+    try{
+      if(window.claude&&typeof window.claude.use==='function'){const r=await window.claude.use('room');
+        if(r){this.room=r;this.ok=true;this.p2p=false;r.onPeers(()=>{if(!this.gr)renderRoomList()},()=>{this.ok=false;updateMpScreen()});updateMpScreen();return}}
+      if(typeof Peer==='function'&&typeof makeP2PRoom==='function'){this.room=makeP2PRoom();this.ok=true;this.p2p=true;updateMpScreen();return}
+      this.ok=false;
     }catch(e){this.ok=false}
     updateMpScreen();
   },
@@ -1638,7 +1708,9 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
   async enter(code,asHost){
     code=String(code||'').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,6);if(code.length<3){toast('Der Code braucht mindestens 3 Zeichen.');return}
     this.name=cleanName(document.getElementById('inName').value)||'Spieler';try{localStorage.setItem('hitcall_name',this.name)}catch(e){}
-    try{this.gr=await this.room.join('hc-'+code)}catch(e){toast('Beitreten ging nicht ('+(e&&e.code||'Fehler')+').');return}
+    if(this.p2p)toast(asHost?'Raum wird erstellt …':'Verbinde mit Raum '+code+' …');
+    try{this.gr=await this.room.join('hc-'+code,{create:!!asHost})}catch(e){const c=e&&e.code;
+      toast(c==='not_found'?'Raum '+code+' nicht gefunden. Stimmt der Code, und ist der Host noch im Raum?':c==='taken'?'Den Code '+code+' gibt es schon. Erstelle einfach nochmal einen Raum.':c==='timeout'?'Keine Verbindung zum Raum. Prüf dein Internet und versuch es nochmal.':c==='not_granted'?'Dein Browser unterstützt kein WebRTC.':'Beitreten ging nicht ('+(c||'Fehler')+').');return}
     this.code=code;this.host=!!asHost;this.inGame=false;this.hostPeer=null;this.hostP=null;this.noHostT=0;this.lastHostRound=-1;this.lastHostSt='';
     this.gr.onPeers(()=>{},(err)=>{toast('Verbindung zum Raum verloren.');this.leave()});
     this.push(true);showScreen('s-room');renderRoom();
@@ -2118,7 +2190,8 @@ $('bSoloStart').onclick=()=>{AU.init();G.mode='sp';G.mapIdx=UI.soloMap;G.diff=UI
 // multiplayer screens
 function updateMpScreen(){
   const off=$('mpOff'),on=$('mpOn');
-  if(NET.ok===true){off.hidden=true;on.hidden=false;renderRoomList()}
+  if(NET.ok===true){off.hidden=true;on.hidden=false;$('roomsH').hidden=$('roomList').hidden=!!NET.p2p;
+    $('mpNote').textContent=NET.p2p?'Erstelle einen Raum und schick deinen Freunden den Code oder den Einladungslink. Sie öffnen dieselbe Website und treten bei. Freie Plätze füllen Bots auf, es bleibt immer 50 gegen 50.':'Freie Plätze füllen Bots auf, es bleibt immer 50 gegen 50. Mitspieler brauchen Zugriff auf dieses Artifact und müssen bei claude.ai angemeldet sein.';renderRoomList()}
   else{on.hidden=true;off.hidden=false;off.textContent=NET.ok===null?'Verbinde mit dem Multiplayer-Raum …':'Multiplayer läuft nur, wenn du das Spiel als Artifact auf claude.ai öffnest und dort angemeldet bist. Gegen Bots kannst du hier trotzdem spielen.'}
 }
 function renderRoomList(){
@@ -2130,7 +2203,7 @@ function renderRoomList(){
     const c=document.createElement('span');c.className='c';c.textContent=String(pr.g).slice(0,6);b.append(l,c);b.onclick=()=>NET.enter(String(pr.g),false);el.append(b)}
 }
 function renderRoom(){
-  if(!NET.gr)return;$('roomCode').textContent=NET.code;
+  if(!NET.gr)return;$('roomCode').textContent=NET.code;$('bCopyLink').hidden=!NET.p2p;
   const ps=NET.peers();const lists=[$('listA'),$('listB')];lists[0].innerHTML='';lists[1].innerHTML='';
   for(const p of ps){const pr=p.presence;const d=document.createElement('div');d.className='pl';const n=document.createElement('span');n.textContent=cleanName(pr.nm)||'Spieler';
     const i=document.createElement('i');i.textContent=(pr.hs===1?'Host ':'')+(p.isMe&&p.sameTab?'(du)':'');d.append(n,i);lists[pr.tm===1?1:0].append(d)}
@@ -2142,6 +2215,7 @@ function renderRoom(){
 $('bCreate').onclick=()=>{const code=Math.random().toString(36).slice(2,7).replace(/[^a-z0-9]/g,'a');NET.enter(code,true)};
 $('bJoin').onclick=()=>NET.enter($('inCode').value,false);
 $('bLeave').onclick=()=>NET.leave();
+$('bCopyLink').onclick=()=>{const link=location.origin+location.pathname+'#join-'+NET.code;try{navigator.clipboard.writeText(link).then(()=>toast('Einladungslink kopiert: '+link),()=>toast(link))}catch(e){toast(link)}};
 seg('roomTeam',v=>{NET.team=v;NET.push();renderRoom()});seg('roomWpn',v=>{NET.wpn=v;NET.push()});
 seg('roomDiff',v=>{NET.settings.diff=v;NET.push()});seg('roomRounds',v=>{NET.settings.rtw=v;NET.push()});
 $('bRoomStart').onclick=()=>{AU.init();requestLock();NET.hostStart()};
@@ -2172,6 +2246,7 @@ function frame(t){
   mapCards('soloMaps',i=>{UI.soloMap=i;loadMap(i,false)});selectMapCard('soloMaps',0);
   mapCards('roomMaps',i=>{NET.settings.map=i;NET.push();loadMap(i,false)});selectMapCard('roomMaps',0);
   loadMap(0,false);
+  const jm=/^#join-([a-z0-9]{3,6})$/.exec(location.hash);if(jm){$('inCode').value=jm[1];showScreen('s-mp');toast('Gib deinen Namen ein und klick auf „Beitreten“.')}
   requestAnimationFrame(frame);
   NET.init();
 })();

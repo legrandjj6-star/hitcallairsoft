@@ -22,4 +22,10 @@ Einfach `index.html` im Browser öffnen oder online spielen: https://legrandjj6-
 | Tab | Grosse Karte |
 | Esc | Pause |
 
-Der Online-Multiplayer funktioniert nur in der claude.ai-Version des Spiels. Auf dieser Seite spielst du gegen Bots.
+## Multiplayer
+
+1. Einer klickt auf **Multiplayer → Raum erstellen** und schickt den Code oder den Einladungslink an seine Freunde.
+2. Die Freunde öffnen dieselbe Website, geben den Code ein und klicken **Beitreten**.
+3. Jeder wählt ein Team, der Host startet das Spiel. Freie Plätze füllen Bots auf, es bleibt immer 50 gegen 50.
+
+Die Spieler verbinden sich direkt über WebRTC (PeerJS), es braucht keinen eigenen Server und kein Konto. Der Host muss im Raum bleiben, sonst endet das Spiel für alle.
