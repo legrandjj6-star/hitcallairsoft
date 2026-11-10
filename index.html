@@ -145,6 +145,13 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 #spec .row button{pointer-events:auto}
 #labels{position:absolute;inset:0;overflow:hidden}
 #labels span{position:absolute;font-family:var(--f-display);font-weight:900;font-size:22px;color:var(--orange);text-shadow:0 2px 0 rgba(0,0,0,.7);transform:translate(-50%,-100%);white-space:nowrap}
+.ntag{position:absolute;transform:translate(-50%,-100%);font:600 13px var(--f-body);padding:1px 7px;background:rgba(10,12,8,.6);border-radius:3px;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.7);pointer-events:none}
+.ntag.t0{color:#8fbcff}.ntag.t1{color:#ff8f86}.ntag.foe{background:rgba(60,8,4,.65);color:#ffd2cc}
+.ntag em{font-style:normal;font-family:var(--f-mono);font-size:10.5px;color:var(--dim);margin-left:5px}
+#board{position:absolute;left:50%;top:calc(78px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:rgba(10,12,8,.86);border:1px solid rgba(233,224,198,.2);padding:8px 12px;min-width:min(320px,90vw);display:grid;grid-template-columns:auto 1fr auto auto;gap:3px 14px;font-size:14px;align-items:baseline}
+#board .h{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+#board .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+#board .s{color:var(--dim);font-size:13px}#board .k{font-family:var(--f-mono);text-align:right}
 #hint{position:absolute;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:15px;background:rgba(10,12,8,.7);padding:5px 12px;opacity:0;transition:opacity .3s}
 #vign{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(150,20,10,.55) 100%);opacity:0;transition:opacity .4s}
 #scope{position:absolute;inset:0;background:radial-gradient(circle at center,transparent 0,transparent calc(min(42vw,42vh) - 2px),#050505 calc(min(42vw,42vh)),#050505 100%)}
@@ -173,6 +180,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
   <div id="vign"></div>
   <div id="scope" hidden></div>
   <div id="labels"></div>
+  <div id="board" hidden></div>
   <div id="top">
     <div id="topRow">
       <div class="tcount a"><span>BLAU</span><b id="cntA">50</b></div>
@@ -329,7 +337,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const BUILD_VERSION='1794338656304';
+const BUILD_VERSION='1794338952945';
 'use strict';
 // ================= UTIL =================
 const TAU=Math.PI*2;
@@ -2078,7 +2086,7 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
       if(!e){e=newEnt('rhuman',pr.tm===1?1:0,cleanName(pr.nm)||'Spieler');e.peer=p.peer;e.net=true;this.humans.set(p.peer,e)}
       if(e.idx<0||G.E[e.idx]!==e){if(G.E.length>=MAXE)continue;e.idx=G.E.length;G.E.push(e);charColors(e.idx,e.team,e.skin,e.wpn);const f0=decEnt(pr.ps,0,e);e.x=e.lx=e.tx;e.y=e.ty;e.z=e.lz=e.tz;e.alive=f0.alive}
       const f=decEnt(pr.ps,0,e);if(f.wpn!==e.wpn||f.team!==e.team){e.wpn=f.wpn;e.team=f.team;charColors(e.idx,e.team,e.skin,e.wpn)}
-      e.crouch=f.crouch;
+      e.crouch=f.crouch;e.kills=pr.k|0;
       if(e.alive&&!f.alive){e.alive=false;e.deadT=0}else if(!e.alive&&f.alive&&e.deadT<.01){e.alive=true}
       this.shotsFrom(p.peer+':sh',pr.sh,e.team,false);
       this.freshList(p.peer+':hh',pr.hh,it=>it[0],it=>{
@@ -2182,6 +2190,7 @@ function enterGameView(lock){
   if(G.mode==='client')hint('Klick ins Bild, um die Maus einzufangen.',4);
 }
 function toMenu(){
+  for(const t of nameTags.values())t.el.remove();nameTags.clear();
   G.mode='menu';G.phase='none';G.matchOver=false;G.me=null;G.E=[];clearBBs();clearSpent();for(let i=0;i<MAXE;i++)hideChar(i);charsCommit();
   $('menu').hidden=false;$('hud').hidden=true;$('pause').hidden=true;hideRoundOver();$('scope').hidden=true;
   if(document.pointerLockElement)document.exitPointerLock();
@@ -2255,6 +2264,7 @@ function drawMini(){
   for(const e of G.E){if(!e.alive||e.gone||e===me)continue;const px=(e.x-w.x0)*sx,py=(e.z-w.z0)*sz;
     if(e.team===me.team){x.fillStyle=e.team===0?'#4c93ff':'#ff4a3d';x.fillRect(px-2,py-2,4,4)}
     else if(e.spotT>G.time){x.fillStyle=e.team===0?'#9cc4ff':'#ffb0a8';x.beginPath();x.arc(px,py,2.6,0,TAU);x.fill();x.strokeStyle='#000';x.lineWidth=1;x.stroke()}}
+  if(big){x.font='600 12px "Barlow Semi Condensed",sans-serif';x.textBaseline='middle';for(const e of G.E){if(e.kind!=='rhuman'||!e.alive||e.gone||e.team!==me.team)continue;const qx=(e.x-w.x0)*sx,qz=(e.z-w.z0)*sz;x.fillStyle='#000';x.fillText(e.name,qx+6,qz+1);x.fillStyle='#fff';x.fillText(e.name,qx+5,qz);x.strokeStyle='#fff';x.lineWidth=1.5;x.strokeRect(qx-3.5,qz-3.5,7,7)}}
   const px=(me.x-w.x0)*sx,py=(me.z-w.z0)*sz;x.save();x.translate(px,py);x.rotate(-me.yaw);x.fillStyle='#ff6a1a';x.strokeStyle='#000';x.lineWidth=1;x.beginPath();x.moveTo(0,-6);x.lineTo(4,4);x.lineTo(0,2);x.lineTo(-4,4);x.closePath();x.fill();x.stroke();x.restore();
 }
 
@@ -2338,6 +2348,33 @@ function renderFrame(vm){
   if(vm&&VM.root.visible){renderer.clearDepth();renderer.render(vmScene,vmCam)}
 }
 
+// ---------- name tags for real players ----------
+const nameTags=new Map();const _nt=new THREE.Vector3();
+function updateNameTags(dt){
+  const me=G.me,box=$('labels'),seen=new Set();
+  if(me&&G.mode!=='menu'){
+    const cp=camera.position,W=innerWidth,H=innerHeight;
+    for(const e of G.E){
+      if(e.kind!=='rhuman'||!e.alive||e.gone)continue;seen.add(e);
+      let t=nameTags.get(e);if(!t){const el=document.createElement('div');el.className='ntag';const n=document.createElement('span');const d=document.createElement('em');el.append(n,d);box.append(el);t={el,n,d,chk:0,vis:false,name:''};nameTags.set(e,t)}
+      const mate=e.team===me.team,dist=Math.hypot(e.x-cp.x,e.y+1.5-cp.y,e.z-cp.z);
+      t.chk-=dt;if(t.chk<=0){t.chk=.2;t.vis=mate?dist<220:(dist<70&&G.world.los(cp.x,cp.y,cp.z,e.x,e.y+(e.crouch?1:1.5),e.z))}
+      _nt.set(e.rx,e.ry+(mate?2.55:2.05)-e.crs*.45,e.rz).project(camera);
+      if(!t.vis||_nt.z>1||Math.abs(_nt.x)>1.05||Math.abs(_nt.y)>1.05){t.el.style.display='none';continue}
+      if(t.name!==e.name){t.name=e.name;t.n.textContent=e.name}
+      t.el.className='ntag t'+e.team+(mate?'':' foe');t.d.textContent=mate?Math.round(dist)+' m':'';
+      t.el.style.display='';t.el.style.left=((_nt.x+1)/2*W)+'px';t.el.style.top=((1-_nt.y)/2*H)+'px';t.el.style.opacity=mate?clamp(1.15-dist/240,.45,1):1;
+    }
+  }
+  for(const[e,t]of nameTags)if(!seen.has(e)){t.el.remove();nameTags.delete(e)}
+}
+function updateBoard(){
+  const b=$('board');const show=INP.tab&&NET.inGame&&G.me;b.hidden=!show;if(!show)return;
+  const rows=[G.me,...G.E.filter(e=>e.kind==='rhuman')].sort((a,c)=>a.team-c.team||(c.kills|0)-(a.kills|0));
+  b.innerHTML='';const add=(txt,cls)=>{const d=document.createElement('div');d.className=cls;d.textContent=txt;b.append(d);return d};
+  add('Team','h');add('Spieler','h');add('Status','h');add('Treffer','h').style.textAlign='right';
+  for(const e of rows){const t=add(TEAMN[e.team],'s c'+e.team);const n=add(e.name+(e===G.me?' (du)':''),'n');n.className='n c'+e.team;add(e.alive&&!e.gone?'im Spiel':'raus','s');add(String(e.kills|0),'k')}
+}
 // ---------- HUD ----------
 let hudT=0;
 function updateHUD(dt){
@@ -2355,7 +2392,7 @@ function updateHUD(dt){
     const wp=WPN[me.wpn];$('wname').textContent=wp.name;$('amag').textContent=me.mag;
     for(const s of $('slots').children)s.className=+s.dataset.s===me.wpn?'on':'';
     if(NET.inGame)$('netinfo').textContent='Raum '+NET.code+' · '+NET.peers().length+' Spieler'+(NET.host?' · Host':'');
-    drawMini();
+    drawMini();updateBoard();
   }
   $('reload').firstChild.style.width=(me.reloadT>0?(1-me.reloadT/WPN[me.wpn].reload)*100:0)+'%';
   const wpn=WPN[me.wpn];const showX=me.alive&&!(wpn.id==='sniper'&&VM.t.ads>.6);$('xh').hidden=!showX;
@@ -2469,7 +2506,7 @@ function frame(t){
     applyLook();
     if(!(G.paused&&G.mode==='sp')){const n=G.mode==='sp'&&G.me&&!G.me.alive?G.timeScale:1;for(let i=0;i<n;i++)simStep(dt)}
     if(G.mode==='menu'){renderFrame(false);return}
-    updateCamera(dt);updateVM(dt);updateChars(dt);updateBBRender();updateHUD(dt);
+    updateCamera(dt);updateVM(dt);updateChars(dt);updateBBRender();updateHUD(dt);updateNameTags(dt);
     renderFrame(G.me&&G.me.alive);
   }catch(err){console.error(err)}
 }
