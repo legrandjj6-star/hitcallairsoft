@@ -2,7 +2,7 @@
 
 3D-Airsoft-Shooter im Browser: 50 gegen 50 gegen Bots, ein Treffer und du bist raus.
 
-- 3 Karten mit Höhenunterschieden: Steinbruch, Waldfestung, Hafen
+- 6 Karten mit Höhenunterschieden: Steinbruch, Waldfestung, Hafen und die grossen Karten Bergdorf, Wüstenstadt und Flugplatz
 - 5 Waffen: M4 AEG, MP5 SMG, M249 LMG, VSR-10 Sniper, M870 Shotgun
 - Bots, die Deckung suchen, rausschauen und von Deckung zu Deckung vorrücken
 
