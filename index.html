@@ -169,6 +169,12 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 #rstats{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;text-align:left}
 #rstats div{border:1px solid var(--line);padding:8px 10px;font-size:14px;color:var(--dim)}
 #rstats b{display:block;font-family:var(--f-mono);font-size:20px;color:var(--sand)}
+.btn.ev{background:repeating-linear-gradient(-45deg,#2b2112 0 14px,#211a0e 14px 28px);border-color:var(--orange2);color:var(--orange2)}
+.btn.ev small{color:#d8b88a}
+.btn.ev:hover{border-color:var(--orange);background:repeating-linear-gradient(-45deg,#3a2c16 0 14px,#2b2112 14px 28px)}
+#evMap{width:min(320px,100%);aspect-ratio:1;display:block;border:1.5px solid var(--line2);background:#0c0e09}
+#squadinfo{position:absolute;left:calc(14px + env(safe-area-inset-left,0px));top:calc(38px + env(safe-area-inset-top,0px));font-size:14px;background:rgba(10,12,8,.66);padding:4px 9px;max-width:46vw}
+#squadinfo b{color:var(--orange2)}
 #loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--f-mono);letter-spacing:.14em;font-size:13px;background:var(--panel);border:1.5px solid var(--line2);padding:12px 18px;text-transform:uppercase}
 @media (prefers-reduced-motion:reduce){#feed div{animation:none}}
 @media (max-width:640px){#mini{width:150px}.tcount{font-size:30px}#ammo{font-size:42px}#cmsg{font-size:42px}#dead h2{font-size:76px}}
@@ -190,6 +196,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <div id="bars"><div id="barA"><i></i></div><div id="barB"><i></i></div></div>
   </div>
   <div id="netinfo" hidden></div>
+  <div id="squadinfo" hidden></div>
   <div id="feed"></div>
   <canvas id="mini" width="230" height="153"></canvas>
   <div id="wbox">
@@ -224,6 +231,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <div id="touchWarn" class="touchwarn" hidden>Zum Spielen brauchst du Tastatur und Maus. Auf dem Handy siehst du nur das Menü.</div>
     <div class="col">
       <button class="btn pri" id="bSolo">Gegen Bots <small>Einzelspieler</small></button>
+      <button class="btn ev" id="bEvent">Special Event <small>Grossschlacht · 200 gegen 200 · 1 × 1 km</small></button>
       <button class="btn" id="bMulti">Multiplayer <small>Mit Freunden online</small></button>
       <button class="btn" id="bSettings">Einstellungen <small>Maus, Grafik, Ton</small></button>
     </div>
@@ -256,6 +264,24 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <h3>Runden zum Sieg</h3>
     <div class="seg" id="soloRounds"><button data-v="1">1</button><button class="on" data-v="2">2</button><button data-v="3">3</button><button data-v="5">5</button></div>
     <button class="btn pri" id="bSoloStart">Aufs Feld <small>50 gegen 50</small></button>
+  </section>
+
+  <!-- special event -->
+  <section class="scr" id="s-event" hidden>
+    <button class="back" data-go="s-main">← Zurück</button>
+    <div class="tape"></div>
+    <div class="tag">Special Event</div>
+    <h2>Grossschlacht</h2>
+    <p class="lead">Eine Karte von <b>1 × 1 km</b> mit Feldlagern, Dörfern, Kirchtürmen, Burgen, Bergen, Höfen, Wäldern und einem Fluss mit vier Brücken. <b>200 gegen 200</b>, jedes Team aufgeteilt in Trupps zu 10–30 Mann mit eigenen Zielen.</p>
+    <canvas id="evMap" width="320" height="320"></canvas>
+    <h3>Dein Team</h3>
+    <div class="seg" id="evTeam"><button class="t0 on" data-v="0">Blau</button><button class="t1" data-v="1">Rot</button></div>
+    <h3>Startwaffe</h3>
+    <div class="seg" id="evWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button></div>
+    <h3>Bot-Stärke</h3>
+    <div class="seg" id="evDiff"><button data-v="0">Leicht</button><button class="on" data-v="1">Normal</button><button data-v="2">Schwer</button></div>
+    <p class="note">Du kämpfst im Trupp Alpha. Eine Schlacht dauert bis zu 20 Minuten. Bist du raus, schaust du deinem Trupp zu und kannst die Zeit vorspulen. Im Multiplayer wählt der Host die Grossschlacht als Karte.</p>
+    <button class="btn pri" id="bEventStart">Ins Gefecht <small>400 Kämpfer</small></button>
   </section>
 
   <!-- multiplayer lobby -->
@@ -342,7 +368,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const BUILD_VERSION='1794339408557';
+const BUILD_VERSION='1794401963814';
 'use strict';
 // ================= UTIL =================
 const TAU=Math.PI*2;
@@ -410,19 +436,19 @@ class World{
   constructor(def){
     this.def=def;const[W,D]=def.size;this.W=W;this.D=D;this.x0=-W/2;this.z0=-D/2;this.qx=Math.min(20,4095/W);this.qz=Math.min(20,4095/D);
     this.water=def.water??-999;this.N=Noise(def.seed);
-    this.hw=W+1;this.hd=D+1;this.hm=new Float32Array(this.hw*this.hd);
-    for(let iz=0;iz<this.hd;iz++)for(let ix=0;ix<this.hw;ix++)this.hm[iz*this.hw+ix]=def.terrain(this.x0+ix,this.z0+iz,this.N,this);
+    const hr=def.hres||1;this.hr=hr;this.hw=Math.round(W/hr)+1;this.hd=Math.round(D/hr)+1;this.hm=new Float32Array(this.hw*this.hd);
+    for(let iz=0;iz<this.hd;iz++)for(let ix=0;ix<this.hw;ix++)this.hm[iz*this.hw+ix]=def.terrain(this.x0+ix*hr,this.z0+iz*hr,this.N,this);
     this.boxes=[];this.ramps=[];this.sights=[];
     this.gw=Math.ceil(W/CELL);this.gd=Math.ceil(D/CELL);const n=this.gw*this.gd;
     this.gB=[];this.gR=[];this.gS=[];for(let i=0;i<n;i++){this.gB.push([]);this.gR.push([]);this.gS.push([])}
     this.vis=new GeoBuilder();this.mirror=false;this.rnd=mulberry32(def.seed*31+7);
     def.build(this);
     this.posts=[];
-    for(const p of def.posts){this.posts.push({x:p[0],y:p[1],z:p[2],side:p[3],hold:p[4]||0});if(p[3]!==0)this.posts.push({x:-p[0],y:p[1],z:-p[2],side:-p[3],hold:p[4]||0})}
+    for(const p of def.posts){this.posts.push({x:p[0],y:p[1],z:p[2],side:p[3],hold:p[4]||0,name:p[5]||''});if(p[3]!==0)this.posts.push({x:-p[0],y:p[1],z:-p[2],side:-p[3],hold:p[4]||0,name:p[6]||p[5]||''})}
   }
   // ---------- terrain ----------
   terrainH(x,z){
-    let fx=x-this.x0,fz=z-this.z0;fx=fx<0?0:fx>this.W-.001?this.W-.001:fx;fz=fz<0?0:fz>this.D-.001?this.D-.001:fz;
+    let fx=(x-this.x0)/this.hr,fz=(z-this.z0)/this.hr;const mx=this.hw-1.001,mz=this.hd-1.001;fx=fx<0?0:fx>mx?mx:fx;fz=fz<0?0:fz>mz?mz:fz;
     const ix=fx|0,iz=fz|0,tx=fx-ix,tz=fz-iz,i=iz*this.hw+ix,hm=this.hm;
     const a=hm[i],b=hm[i+1],c=hm[i+this.hw],d=hm[i+this.hw+1];
     return a+(b-a)*tx+(c-a)*tz+(a-b-c+d)*tx*tz;
@@ -483,6 +509,19 @@ class World{
         if(ddx*ddx+ddz*ddz<r2*.25){const h=this.rampH(q,cx,cz);if(h>lim&&(q.th?h-q.th<top:q.bot<top))return true}}
     }
     if(this.terrainH(x,z)>lim)return true;
+    return false;
+  }
+  // any movement-blocking box crossed by the XZ segment between heights y0..y1 (Liang-Barsky against each AABB)
+  segBlocked(ax,az,bx,bz,y0,y1){
+    const minx=Math.min(ax,bx),maxx=Math.max(ax,bx),minz=Math.min(az,bz),maxz=Math.max(az,bz),dx=bx-ax,dz=bz-az;
+    const gx0=clamp(Math.floor((minx-this.x0)/CELL),0,this.gw-1),gx1=clamp(Math.floor((maxx-this.x0)/CELL),0,this.gw-1);
+    const gz0=clamp(Math.floor((minz-this.z0)/CELL),0,this.gd-1),gz1=clamp(Math.floor((maxz-this.z0)/CELL),0,this.gd-1);
+    for(let gz=gz0;gz<=gz1;gz++)for(let gx=gx0;gx<=gx1;gx++){const bl=this.gB[gz*this.gw+gx];
+      for(let i=0;i<bl.length;i++){const b=bl[i];if(!(b.fl&1)||b.maxY<=y0||b.minY>=y1||b.maxX<minx||b.minX>maxx||b.maxZ<minz||b.minZ>maxz)continue;
+        let t0=0,t1=1,ok=true;
+        if(dx===0){if(ax<=b.minX||ax>=b.maxX)ok=false}else{let ta=(b.minX-ax)/dx,tb=(b.maxX-ax)/dx;if(ta>tb){const q=ta;ta=tb;tb=q}t0=Math.max(t0,ta);t1=Math.min(t1,tb)}
+        if(ok){if(dz===0){if(az<=b.minZ||az>=b.maxZ)ok=false}else{let ta=(b.minZ-az)/dz,tb=(b.maxZ-az)/dz;if(ta>tb){const q=ta;ta=tb;tb=q}t0=Math.max(t0,ta);t1=Math.min(t1,tb)}}
+        if(ok&&t0<t1)return true}}
     return false;
   }
   // ---------- builder API (mirror aware) ----------
@@ -636,45 +675,49 @@ class Heap{
 }
 class Nav{
   constructor(w){
-    this.w=w;const W=w.W,D=w.D;this.cw=W;this.cd=D;
-    const F=[],C=[];const cs=new Int32Array(W*D+1);
+    const k=w.def.navCell||1;this.k=k;this.w=w;const W=Math.floor(w.W/k),D=Math.floor(w.D/k);this.cw=W;this.cd=D;
+    const F=[],C=[],KD=[];const cs=new Int32Array(W*D+1);
     const solid=(x,y,z)=>w.pointSolid(x,y,z,1);
     const walk=(x,f,z)=>{
       if(f<w.water-2.1)return false;
       if(solid(x,f+.3,z)||solid(x,f+.75,z)||solid(x,f+1.2,z)||solid(x,f+1.65,z))return false;
       const o=.3;for(const hy of[.85,1.45])if(solid(x+o,f+hy,z+o)||solid(x-o,f+hy,z+o)||solid(x+o,f+hy,z-o)||solid(x-o,f+hy,z-o))return false;
       return true};
+    const mg=Math.max(2,Math.ceil(2/k));
     for(let iz=0;iz<D;iz++)for(let ix=0;ix<W;ix++){
       const ci=iz*W+ix;cs[ci]=F.length;
-      if(ix<2||iz<2||ix>=W-2||iz>=D-2)continue;
-      const x=w.x0+ix+.5,z=w.z0+iz+.5;const cand=[w.terrainH(x,z)];const g=w.gi(x,z);
-      for(const b of w.gB[g])if((b.fl&1)&&x>=b.minX&&x<=b.maxX&&z>=b.minZ&&z<=b.maxZ)cand.push(b.maxY);
-      for(const r of w.gR[g]){const inA=r.ax===0?(x>=r.x0-.01&&x<=r.x1+.01&&z>=r.z0+.25&&z<=r.z1-.25):(z>=r.z0-.01&&z<=r.z1+.01&&x>=r.x0+.25&&x<=r.x1-.25);if(inA)cand.push(w.rampH(r,x,z))}
-      cand.sort((a,b)=>a-b);let last=-1e9;
-      for(const f of cand){if(f-last<.35)continue;if(walk(x,f,z)){F.push(f);C.push(ci);last=f}}
+      if(ix<mg||iz<mg||ix>=W-mg||iz>=D-mg)continue;
+      const x=w.x0+(ix+.5)*k,z=w.z0+(iz+.5)*k;const cand=[[w.terrainH(x,z),0]];const g=w.gi(x,z);
+      for(const b of w.gB[g])if((b.fl&1)&&x>=b.minX&&x<=b.maxX&&z>=b.minZ&&z<=b.maxZ)cand.push([b.maxY,1]);
+      for(const r of w.gR[g]){const inA=r.ax===0?(x>=r.x0-.01&&x<=r.x1+.01&&z>=r.z0+.25&&z<=r.z1-.25):(z>=r.z0-.01&&z<=r.z1+.01&&x>=r.x0+.25&&x<=r.x1-.25);if(inA)cand.push([w.rampH(r,x,z),2])}
+      cand.sort((a,b)=>a[0]-b[0]);let last=-1e9;
+      for(const[f,kd]of cand){if(f-last<.35)continue;if(walk(x,f,z)){F.push(f);C.push(ci);KD.push(kd);last=f}}
     }
     cs[W*D]=F.length;
-    const N=F.length;this.N=N;this.F=new Float32Array(F);this.C=new Int32Array(C);this.cs=cs;
-    // edges
+    const N=F.length;this.N=N;this.F=new Float32Array(F);this.C=new Int32Array(C);this.KD=new Uint8Array(KD);this.cs=cs;
+    // edges (exact segment-vs-box wall test so coarse cells never cut through walls or corners)
     const adj=[];const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-    const hasNear=(ci,f)=>{for(let m=cs[ci];m<cs[ci+1];m++)if(Math.abs(this.F[m]-f)<=CLIMB+.15)return true;return false};
+    const hasNear=(ci,f)=>{for(let m=cs[ci];m<cs[ci+1];m++)if(Math.abs(this.F[m]-f)<=CLIMB*k+.15)return true;return false};
     for(let a=0;a<N;a++){
-      const ci=this.C[a],ix=ci%W,iz=(ci/W)|0,fa=this.F[a];const list=[];
-      const ax=w.x0+ix+.5,az=w.z0+iz+.5;
+      const ci=this.C[a],ix=ci%W,iz=(ci/W)|0,fa=this.F[a],ka=this.KD[a];const list=[];
+      const ax=w.x0+(ix+.5)*k,az=w.z0+(iz+.5)*k;
       for(const[dx,dz]of dirs){
         const jx=ix+dx,jz=iz+dz;if(jx<0||jz<0||jx>=W||jz>=D)continue;const cj=jz*W+jx;const diag=dx&&dz;
+        const bx=ax+dx*k,bz=az+dz*k;
         let reg=false,drop=-1,dropF=-1e9;
         for(let b=cs[cj];b<cs[cj+1];b++){
-          const fb=this.F[b],dh=fb-fa;
-          if(Math.abs(dh)<=CLIMB*(diag?1.25:1)){
+          const fb=this.F[b],dh=fb-fa,kb=this.KD[b];
+          const lim=k===1?CLIMB*(diag?1.25:1):((ka===1||kb===1)?.6:CLIMB*k*(diag?1.41:1));
+          if(Math.abs(dh)<=lim){
             if(diag&&!(hasNear(iz*W+jx,fa)&&hasNear(jz*W+ix,fa)))continue;
-            const mx=ax+dx*.5,mz=az+dz*.5,my=Math.max(fa,fb);
+            const mx=(ax+bx)/2,mz=(az+bz)/2,my=Math.max(fa,fb);
             if(solid(mx,my+.4,mz)||solid(mx,my+.85,mz)||solid(mx,my+1.25,mz)||solid(mx,my+1.65,mz))continue;
-            if(diag&&(solid(ax+dx*.3,my+1,az+dz*.3)||solid(ax+dx*.7,my+1,az+dz*.7)))continue;
-            list.push(b,(diag?1.414:1)*(this.F[b]<w.water-.3?5:1));reg=true;
-          }else if(!diag&&dh<-CLIMB&&dh>=-4.6&&fb>dropF){drop=b;dropF=fb}
+            if(w.segBlocked(ax,az,bx,bz,my+.35,my+1.65))continue;
+            if(diag&&(solid(ax+dx*k*.3,my+1,az+dz*k*.3)||solid(ax+dx*k*.7,my+1,az+dz*k*.7)))continue;
+            list.push(b,(diag?1.414:1)*k*(this.F[b]<w.water-.3?5:1));reg=true;
+          }else if(!diag&&dh<-lim&&dh>=-4.6&&fb>dropF){drop=b;dropF=fb}
         }
-        if(!reg&&drop>=0){const mx=ax+dx*.5,mz=az+dz*.5;if(!solid(mx,fa+.4,mz)&&!solid(mx,fa+1.3,mz))list.push(drop,3.5)}
+        if(!reg&&drop>=0){const mx=(ax+bx)/2,mz=(az+bz)/2;if(!solid(mx,fa+.4,mz)&&!solid(mx,fa+1.3,mz)&&!w.segBlocked(ax,az,bx,bz,fa+.35,fa+1.65))list.push(drop,3.5*k)}
       }
       adj.push(list);
     }
@@ -682,16 +725,17 @@ class Nav{
     this.aS=new Int32Array(N+1);this.aT=new Int32Array(E);this.aC=new Float32Array(E);
     const inc=new Int32Array(N);let e=0;
     for(let a=0;a<N;a++){this.aS[a]=e;const l=adj[a];for(let i=0;i<l.length;i+=2){this.aT[e]=l[i];this.aC[e]=l[i+1];inc[l[i]]++;e++}}
-    this.aS[N]=e;
+    this.aS[N]=e;adj.length=0;
     this.rS=new Int32Array(N+1);for(let a=0;a<N;a++)this.rS[a+1]=this.rS[a]+inc[a];
     const fill=this.rS.slice(0,N);this.rT=new Int32Array(E);this.rC=new Float32Array(E);
-    for(let a=0;a<N;a++)for(let k=this.aS[a];k<this.aS[a+1];k++){const b=this.aT[k];const p=fill[b]++;this.rT[p]=a;this.rC[p]=this.aC[k]}
+    for(let a=0;a<N;a++)for(let q=this.aS[a];q<this.aS[a+1];q++){const b=this.aT[q];const p=fill[b]++;this.rT[p]=a;this.rC[p]=this.aC[q]}
     this.heap=new Heap(4096);
     // cover map: bit k = an obstacle blocks shots toward yaw k*45deg at crouched (lo) / standing (hi) head height
     this.cLo=new Uint8Array(N);this.cHi=new Uint8Array(N);this.bush=new Uint8Array(N);this.claim=new Int16Array(N);
-    const DX=[],DZ=[];for(let k=0;k<8;k++){const a=k*Math.PI/4;DX.push(-Math.sin(a));DZ.push(-Math.cos(a))}
+    const DX=[],DZ=[];for(let q=0;q<8;q++){const a=q*Math.PI/4;DX.push(-Math.sin(a));DZ.push(-Math.cos(a))}
+    const RS=k===1?[.6,1,1.4]:[.7,1.3];
     for(let n=0;n<N;n++){const x=this.cx(n),z=this.cz(n),f=this.F[n];let lo=0,hi=0;
-      for(let k=0;k<8;k++){const bit=1<<k;for(const r of[.6,1,1.4]){const px=x+DX[k]*r,pz=z+DZ[k]*r;if(!(lo&bit)&&w.pointSolid(px,f+.95,pz,2))lo|=bit;if(!(hi&bit)&&w.pointSolid(px,f+1.7,pz,2))hi|=bit}}
+      for(let q=0;q<8;q++){const bit=1<<q;for(const r of RS){const px=x+DX[q]*r,pz=z+DZ[q]*r;if(!(lo&bit)&&w.pointSolid(px,f+.95,pz,2))lo|=bit;if(!(hi&bit)&&w.pointSolid(px,f+1.7,pz,2))hi|=bit}}
       this.cLo[n]=lo;this.cHi[n]=hi;if(w.sightBlocked(x,f+.9,z)&&!w.pointSolid(x,f+.9,z,2))this.bush[n]=1}
     this.stamp=new Int32Array(N);this.par=new Int32Array(N);this.cst=new Float32Array(N);this.st=0;this.h2=new Heap(1024);
   }
@@ -702,17 +746,17 @@ class Nav{
     while(H.n&&exp<700){const u=H.pop(),cu=H.pk;if(cu>this.cst[u])continue;if(cu>maxCost||cu>=bs)break;exp++;
       const x=this.cx(u),z=this.cz(u),dx=tx-x,dz=tz-z;
       if(dx*dx+dz*dz>=o.minThreat*o.minThreat&&!(this.claim[u]&&this.claim[u]!==o.self)&&(!o.field||o.field.dist[u]<o.maxField)){
-        const a=Math.atan2(-dx,-dz),k=((Math.round(a/(Math.PI/4))%8)+8)%8;
-        let sc=-1;if((this.cLo[u]>>k)&1)sc=cu+(((this.cHi[u]>>k)&1)?2.5:0);else if(o.bushOK&&this.bush[u])sc=cu+2;
+        const a=Math.atan2(-dx,-dz),q=((Math.round(a/(Math.PI/4))%8)+8)%8;
+        let sc=-1;if((this.cLo[u]>>q)&1)sc=cu+(((this.cHi[u]>>q)&1)?2.5:0);else if(o.bushOK&&this.bush[u])sc=cu+2;
         if(sc>=0&&sc<bs){bs=sc;best=u}}
       for(let e=this.aS[u];e<this.aS[u+1];e++){const v=this.aT[e],c=cu+this.aC[e];if(this.stamp[v]!==st||c<this.cst[v]){this.stamp[v]=st;this.cst[v]=c;this.par[v]=u;H.push(c,v)}}
     }
     if(best<0)return null;const p=[];for(let n=best;n!==-1;n=this.par[n])p.push(n);return p.reverse();
   }
-  cx(n){const ci=this.C[n];return this.w.x0+(ci%this.cw)+.5}
-  cz(n){const ci=this.C[n];return this.w.z0+((ci/this.cw)|0)+.5}
+  cx(n){const ci=this.C[n];return this.w.x0+((ci%this.cw)+.5)*this.k}
+  cz(n){const ci=this.C[n];return this.w.z0+(((ci/this.cw)|0)+.5)*this.k}
   nodeAt(x,y,z){
-    const ix=Math.floor(x-this.w.x0),iz=Math.floor(z-this.w.z0);
+    const ix=Math.floor((x-this.w.x0)/this.k),iz=Math.floor((z-this.w.z0)/this.k);
     let best=-1,bf=-1e9,bd=1e9,alt=-1;
     for(let r=0;r<=2&&best<0;r++){
       for(let dz=-r;dz<=r;dz++)for(let dx=-r;dx<=r;dx++){
@@ -726,15 +770,20 @@ class Nav{
     return best>=0?best:alt;
   }
   reach(x,y,z,m){const tx=this.cx(m),tz=this.cz(m),ty=this.F[m];for(let i=1;i<=4;i++){const t=i/4;if(this.w.pointSolid(x+(tx-x)*t,Math.max(y,ty)+.9,z+(tz-z)*t,1))return false}return true}
-  field(sources){
-    const N=this.N;const dist=new Float32Array(N).fill(Infinity),next=new Int32Array(N).fill(-1);
-    const H=this.heap;H.n=0;
-    for(const s of sources){if(s>=0&&dist[s]>0){dist[s]=0;H.push(0,s)}}
-    while(H.n){const u=H.pop(),du=H.pk;if(du>dist[u])continue;
-      for(let k=this.rS[u];k<this.rS[u+1];k++){const v=this.rT[k],nd=du+this.rC[k];if(nd<dist[v]){dist[v]=nd;H.push(nd,v)}}}
-    for(let a=0;a<N;a++){if(!(dist[a]>0)||dist[a]===Infinity)continue;let bd=Infinity,bb=-1;
-      for(let k=this.aS[a];k<this.aS[a+1];k++){const b=this.aT[k];const c=this.aC[k]+dist[b];if(c<bd){bd=c;bb=b}}next[a]=bb}
-    return{dist,next};
+  field(sources){const j=this.fieldJob(sources);while(!j.step(1e9));return j.res}
+  // time-sliced Dijkstra toward the sources; step(budget) returns true when the field is ready (job.res)
+  fieldJob(sources,reuse){
+    const N=this.N,dist=reuse?reuse.dist.fill(Infinity):new Float32Array(N).fill(Infinity),next=reuse?reuse.next.fill(-1):new Int32Array(N).fill(-1),H=new Heap(8192);
+    for(const s of sources)if(s>=0&&dist[s]>0){dist[s]=0;H.push(0,s)}
+    let phase=0,i=0;const me=this;
+    const job={res:null,step(budget){
+      if(phase===0){let c=0;while(H.n&&c<budget){const u=H.pop(),du=H.pk;c++;if(du>dist[u])continue;
+          for(let q=me.rS[u];q<me.rS[u+1];q++){const v=me.rT[q],nd=du+me.rC[q];if(nd<dist[v]){dist[v]=nd;H.push(nd,v)}}}
+        if(!H.n)phase=1;return false}
+      const end=Math.min(N,i+budget*3);
+      for(let a=i;a<end;a++){if(!(dist[a]>0)||dist[a]===Infinity)continue;let bd=Infinity,bb=-1;for(let q=me.aS[a];q<me.aS[a+1];q++){const b=me.aT[q];const c=me.aC[q]+dist[b];if(c<bd){bd=c;bb=b}}next[a]=bb}
+      i=end;if(i>=N){job.res={dist,next};return true}return false}};
+    return job;
   }
 }
 
@@ -1252,6 +1301,149 @@ const MAP_AIRFIELD={
 };
 MAPS.push(MAP_VILLAGE,MAP_DESERT,MAP_AIRFIELD);
 
+// ================= SPECIAL EVENT: GROSSSCHLACHT (1000 x 1000 m, 200 vs 200 in squads) =================
+const EV_N=Noise(71);
+const EV_R=z=>22*Math.sin(z*.0085)+9*Math.sin(z*.021);          // river centre line (odd -> point symmetric)
+const EV_TR=[[-215,-100],[-200,-70],[-212,-40],[-196,-10],[-206,20]];
+const EV_PADS=mirrorPads([[-425,20,32,48,null],[-290,-150,42,42,null],[-200,230,30,30,null],[-110,40,42,42,null],[-160,-330,28,28,null],
+  [-360,-300,24,20,null],[-330,130,24,20,null],[-400,-200,24,20,null],[-330,360,9,9,null],[-270,30,6,6,null],[-370,-80,6,6,null]]);
+const EV_ROADS=(()=>{const L=[[[-470,20],[-400,20],[-330,-10],[-290,-150],[-200,-140],[-60,-130],[EV_R(-130)-17,-130]],
+  [[-330,-10],[-250,60],[-110,40],[-50,120],[EV_R(130)-17,130]],[[-250,60],[-200,230],[-120,330],[EV_R(380)-17,380]],
+  [[-290,-150],[-300,-250],[-160,-330],[-60,-390],[EV_R(-380)-17,-380]],[[-330,-10],[-400,-200],[-360,-300]],[[-250,60],[-330,130]]];
+  const segs=[];for(const l of L)for(let i=0;i<l.length-1;i++){const a=l[i],b=l[i+1];segs.push([a[0],a[1],b[0],b[1]],[-a[0],-a[1],-b[0],-b[1]])}return segs})();
+function evRoadD(x,z){let m=1e9;for(const s of EV_ROADS){if(x<Math.min(s[0],s[2])-8||x>Math.max(s[0],s[2])+8||z<Math.min(s[1],s[3])-8||z>Math.max(s[1],s[3])+8)continue;const d=distSeg2(x,z,s[0],s[1],s[2],s[3])[0];if(d<m)m=d}return Math.sqrt(m)}
+const evForest=(x,z)=>EV_N(x*.007+50,z*.007-30)+EV_N(-x*.007+50,-z*.007-30);
+const evFarm=(x,z)=>EV_N(x*.004-20,z*.004+70)+EV_N(-x*.004-20,-z*.004+70);
+function evTrench(x,z){
+  let best=1e9,bs=0,acc=0,tot=0;for(let i=0;i<EV_TR.length-1;i++)tot+=Math.hypot(EV_TR[i+1][0]-EV_TR[i][0],EV_TR[i+1][1]-EV_TR[i][1]);
+  if(x<-225||x>-185||z<-110||z>30)return 0;
+  for(let i=0;i<EV_TR.length-1;i++){const a=EV_TR[i],b=EV_TR[i+1];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const[d2,t]=distSeg2(x,z,a[0],a[1],b[0],b[1]);if(d2<best){best=d2;bs=acc+t*L}acc+=L}
+  const d=Math.sqrt(best);if(d>2)return 0;return 1.45*(1-sstep(.9,1.8,d))*sstep(0,6,bs)*sstep(0,6,tot-bs)*sstep(1.5,5,Math.abs(bs-tot/2));
+}
+function evRaw(x,z,N){
+  let h=10+5.5*(N.fbm(x*.0055+11,z*.0055-3,4)+N.fbm(-x*.0055+11,-z*.0055-3,4));
+  h+=1.2*(N.fbm(x*.03,z*.03,2)+N.fbm(-x*.03,-z*.03,2));
+  const m1=Math.hypot(x+330,z-360),m2=Math.hypot(x-330,z+360);h+=42*Math.max(0,1-m1/135)**1.6+42*Math.max(0,1-m2/135)**1.6;
+  const c1=Math.hypot(x+160,z+330),c2=Math.hypot(x-160,z-330);h+=16*(1-sstep(14,58,c1))+16*(1-sstep(14,58,c2));
+  const l1=Math.hypot(x+215,z+215),l2=Math.hypot(x-215,z-215);h-=10*(1-sstep(24,56,l1))+10*(1-sstep(24,56,l2));
+  return h;
+}
+const MAP_EVENT={
+  id:'event',name:'Grossschlacht',event:true,perTeam:200,squads:true,
+  desc:'1 × 1 km · 200 gegen 200 in Trupps zu 10–30 Mann',
+  size:[1000,1000],seed:71,water:2.2,hres:2,meshStep:2,navCell:2,roundTime:1200,
+  sky:[0x8db4d8,0xe6e2d2],fog:[0xc6cec8,150,600],sun:[0.45,0.75,0.35,0xfff2dc,1.0],hemi:[0xe2ecf2,0x5a6a40,0.62],
+  terrain(x,z,N){
+    let h=evRaw(x,z,N);
+    for(const p of EV_PADS)if(p[4]==null)p[4]=Math.max(evRaw(p[0],p[1],N),3.6);
+    h=applyPads(h,x,z,EV_PADS);
+    h-=evTrench(x,z)+evTrench(-x,-z);
+    const d=Math.abs(x-EV_R(z));h=lerp(h,4.5,1-sstep(18,60,d));h=lerp(h,.6,1-sstep(7,13,d));
+    h+=14*sstep(482,498,Math.abs(x))+14*sstep(482,498,Math.abs(z));
+    return h;
+  },
+  ground(x,z,h,s,n){
+    if(h<2.7)return n>0?0x8a7d62:0x7f735a;
+    if(s>.85)return n>0?0x837d70:0x766f62;
+    if(h>44)return n>-.2?0xe4e8e6:0xc9cfcc;
+    if(h>32)return n>.2?0x8d8a76:0x7a8a58;
+    if(evRoadD(x,z)<2.6)return n>.2?0x95836a:0x8c7a60;
+    const f=evForest(x,z);if(f>.45)return n>.2?0x3e5a2c:0x46622f;
+    if(evFarm(x,z)>.25){const k=((Math.floor(x/38)*7349)^(Math.floor(z/31)*9151))&3;return[0xc0ae5e,0x7f9c46,0x8c7652,0xa9b464][k]}
+    return n>.4?0x6f8f45:n<-.35?0x7f8a4a:n<-.05?0x5f8240:0x678a42;
+  },
+  spawn:[-476,-440,-462,440],
+  posts:[[-425,null,20,-1,1,'Lager West','Lager Ost'],[-290,null,-150,-1,0,'Westdorf','Ostdorf'],[-200,null,230,-1,0,'Lindenhof','Birkenhof'],[-110,null,40,-1,0,'Mühlbach','Steinbach'],
+    [-160,null,-330,-1,1,'Burg Falkenstein','Burg Rabenstein'],[-330,null,360,-1,1,'Gipfel West','Gipfel Ost'],[-360,null,-300,-1,0,'Hof Sonnleiten','Hof Schattleiten'],[-330,null,130,-1,0,'Hof Kreuzweg','Hof Grenzweg'],
+    [-400,null,-200,-1,0,'Hof Erlen','Hof Eschen'],[-205,null,-40,-1,1,'Graben West','Graben Ost'],[-262,null,30,-1,0,'Windmühle West','Windmühle Ost'],[-215,null,-150,-1,0,'Seeufer West','Seeufer Ost'],
+    [EV_R(-380),6,-380,0,0,'Brücke Süd'],[EV_R(-130),6,-130,0,0,'Brücke Mitte-Süd'],[EV_R(130),6,130,0,0,'Brücke Mitte-Nord'],[EV_R(380),6,380,0,0,'Brücke Nord'],
+    [EV_R(260)-32,null,260,0,0,'Flussaue Nord'],[-(EV_R(260)-32),null,-260,0,0,'Flussaue Süd']],
+  build(w){
+    const RF=0x6a3a2c,WH=0xdcd4c2,STN=0x8f897c,RD=0x8a3e2e,WD=0x6b5236,SB=0xb6a479,CO=0x9a968c,CON=[0xb5462e,0x2f5d8a,0x467a3f,0x8c8c86,0xc28a2b];
+    const TC={trunk:0x4e3a28,pine:0x2b482c,pine2:0x35573a,leaf:0x4f7030,leaf2:0x5f8034};
+    const padH=(x,z)=>{for(const p of EV_PADS)if(Math.abs(p[0]-x)<.01&&Math.abs(p[1]-z)<.01)return p[4];return w.T(x,z)};
+    // ---- bridges over the river (outside sym: z list is already symmetric) ----
+    for(const z of[-380,-130,130,380]){const xc=EV_R(z),xa=xc-17,xb=xc+17;const top=Math.max(w.terrainH(xa,z),w.terrainH(xb,z))+.05;
+      w._box(xa,top-.55,z-3.2,xb,top,z+3.2,0x8a8478);w.railing(xa+2,z-3.1,xb-2,z-3.1,top,0x5d6268);w.railing(xa+2,z+3.1,xb-2,z+3.1,top,0x5d6268);
+      for(const px of[xc-7,xc,xc+7])w.box(px,-1,z,1.2,top-.45,1.6,0x7d786c)}
+    w.sym(w=>{
+      const house=(x0,z0,x1,z1,g,col,doors,fl=2)=>{const r=w.building(x0,z0,x1,z1,g,fl,3.2,{col,floor:0x5a4a3a,stair:0x5a4a3a,ground:true,doors});w.roof(x0,z0,x1,z1,r+1,2.6,RF)};
+      const village=(cx,cz,n,seed,church)=>{const r=mulberry32(seed),g=padH(cx,cz);const slots=[];for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){if(!i&&!j)continue;if(n<=8&&(Math.abs(i)>1||Math.abs(j)>1))continue;slots.push([i,j])}
+        for(let i=slots.length-1;i>0;i--){const j=(r()*(i+1))|0;[slots[i],slots[j]]=[slots[j],slots[i]]}
+        const SZ=[[9,9],[10,8],[8,11],[11,9]];const cols=[0xd9cfb8,0xcfc3a6,0xd4c8b0,0xc9bca0,0xe0d6c0];
+        for(let k=0;k<Math.min(n,slots.length);k++){const[i,j]=slots[k];const x=cx+i*17+(r()-.5)*3,z=cz+j*17+(r()-.5)*3;const s=SZ[(r()*4)|0];
+          house(x-s[0]/2,z-s[1]/2,x+s[0]/2,z+s[1]/2,g,cols[k%5],r()<.5?{z0:[[2,4]],x0:[[3,5]]}:{z1:[[2,4]],x0:[[3,5]]})}
+        if(church){w.building(cx-3,cz-4.6,cx+3,cz+4.6,g,4,3.4,{col:WH,floor:0x6a5a48,stair:0x5a4a3a,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]],z1:[[1.5,3.5]]}});
+          for(const[px,pz]of[[-3,-4.6],[3,-4.6],[-3,4.6],[3,4.6]])w._box(cx+px-.3,g+14.65,cz+pz-.3,cx+px+.3,g+16.6,cz+pz+.3,STN);w.roof(cx-3.2,cz-4.8,cx+3.2,cz+4.8,g+16.6,3.2,RF)}
+        else{w.box(cx,g-.2,cz,3.4,.95,3.4,STN);w.box(cx,g,cz,.7,2.1,.7,STN)}};
+      const stand=(x,z)=>{const g=w.T(x,z);for(const[px,pz]of[[-1,-1],[1,-1],[-1,1],[1,1]])w._box(x+px-.12,g-.4,z+pz-.12,x+px+.12,g+4.2,z+pz+.12,WD);
+        w._box(x-1.15,g+3.95,z-1.15,x+1.15,g+4.2,z+1.15,WD);w._box(x-1.2,g+6.2,z-1.2,x+1.2,g+6.4,z+1.2,0x5e4329);
+        w.wall(x+1.1,z-1.1,x+1.1,z+1.1,g+4.2,.9,.12,WD);w.wall(x-1.1,z+1.1,x+1.1,z+1.1,g+4.2,.9,.12,WD);w.wall(x-1.1,z-1.1,x+1.1,z-1.1,g+4.2,.9,.12,WD);
+        w.ramp(x-3.8,z-.5,x-1.15,z+.5,'x',g-.2,g+4.2,0x5e4329,{steps:true,bottom:g-.4})};
+      const tower=(x,z,g)=>{for(const[px,pz]of[[-1.4,-1.4],[1.4,-1.4],[-1.4,1.4],[1.4,1.4]])w._box(x+px-.2,g-.3,z+pz-.2,x+px+.2,g+6,z+pz+.2,WD);
+        w._box(x-1.7,g+5.7,z-1.7,x+1.7,g+6,z+1.7,WD);w.wall(x-1.7,z-1.7,x+1.7,z-1.7,g+6,1.1,.2,WD);w.wall(x-1.7,z+1.7,x+1.7,z+1.7,g+6,1.1,.2,WD);w.wall(x+1.7,z-1.6,x+1.7,z+1.6,g+6,1.1,.2,WD);
+        w._box(x-1.9,g+8.6,z-1.9,x+1.9,g+8.85,z+1.9,0x5e4329);w.ramp(x-12.6,z-.6,x-1.7,z+.6,'x',g,g+6,0x5e4329,{steps:true,bottom:g-.3})};
+      const farm=(cx,cz,seed)=>{const g=padH(cx,cz),r=mulberry32(seed);
+        const rb=w.building(cx-14,cz-7,cx-2,cz+7,g,2,3.5,{col:RD,floor:WD,stair:WD,ground:true,doors:{z0:[[4,8]],x0:[[5,9]]}});w.roof(cx-14,cz-7,cx-2,cz+7,rb+1,3.6,0x5b5b55);
+        house(cx+4,cz-4.5,cx+13,cz+4.5,g,0xd8ccb2,{z0:[[2,4]],x0:[[3,5]]});
+        for(let i=0;i<6;i++)w.gbox(cx-8+i*1.9,cz+12+r()*2,1.6,1.3,1.3,0xc9b26a);
+        // hedgerow rectangle (gaps every 9 m)
+        for(let t=-40;t<=40;t+=4.5)if(((t+40)/4.5|0)%3){w.bush(cx+t,cz-30,1.4,0x3f5e2a);w.bush(cx+t,cz+34,1.4,0x4f6d30)}
+        for(let t=-30;t<=34;t+=4.5)if(((t+30)/4.5|0)%3)w.bush(cx-44,cz+t,1.4,0x3f5e2a)};
+      const tank=(cx,cz,g,h,col)=>{w._box(cx-3,g-.2,cz-2,cx+3,g+h,cz+2,col);w._box(cx-2,g-.2,cz-3,cx+2,g+h,cz+3,col)};
+      // ---- forward base ----
+      {const g=padH(-425,20);
+       w.wall(-452,-24,-398,-24,g-.2,1.5,.9,SB,[[22,30,0,1.5]]);w.wall(-452,64,-398,64,g-.2,1.5,.9,SB,[[22,30,0,1.5]]);
+       w.wall(-452,-23.5,-452,63.5,g-.2,1.5,.9,SB,[[38,46,0,1.5]]);w.wall(-398,-23.5,-398,63.5,g-.2,1.5,.9,SB,[[14,22,0,1.5],[52,60,0,1.5]]);
+       for(const z0 of[-16,0,16])w.building(-447,z0,-433,z0+9,g,2,3.2,{col:0x7d8a68,floor:0x5a5a50,stair:0x55585c,roofAccess:true,ground:true,doors:{z0:[[3,5]],x0:[[3,5]]}});
+       w.building(-428,40,-422,49.2,g,4,3.4,{col:0x8a8a7c,floor:0x5a5a50,stair:0x55585c,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]],x0:[[3,5]]}});
+       tower(-404,-16,g);tower(-404,56,g);
+       w.container(-418,g,-12,true,CON[0]);w.container(-418,g,-9.4,true,CON[1]);w.container(-418,g+2.6,-12,true,CON[3]);w.container(-410,g,48,false,CON[2]);
+       tank(-444,48,g,5,0xd8d4ca);tank(-444,58,g,5,0xcac6bc);
+       w._box(-428,g,4,-416,g+.05,16,0x6f6a62,0);w._box(-423,g+.05,7,-421,g+.08,13,0xe8e6de,0);w._box(-426,g+.05,9.2,-418,g+.08,10.8,0xe8e6de,0)}
+      // ---- villages ----
+      village(-290,-150,13,711,true);village(-200,230,7,733,false);village(-110,40,12,755,false);
+      // ---- castle on its hill ----
+      {const g=padH(-160,-330);
+       w.wall(-178,-348,-142,-348,g-.5,6,1.2,STN,[[10,13,2.5,6]]);w.wall(-178,-312,-142,-312,g-.5,6,1.2,STN,[[20,23,0,6]]);
+       w.wall(-178,-347.4,-178,-312.6,g-.5,6,1.2,STN,[[15,19,0,6]]);w.wall(-142,-347.4,-142,-312.6,g-.5,6,1.2,STN,[[13,21,0,6]]);
+       w.building(-166,-336,-154,-324,g,3,3.4,{col:STN,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z0:[[2,4]],x0:[[4,6]],z1:[[2,4]]}});
+       w.building(-150,-322.2,-144,-313,g,3,3.4,{col:STN,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]]}});
+       w.building(-176,-347,-170,-337.8,g,3,3.4,{col:STN,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z1:[[1.5,3.5]]}})}
+      // ---- farms ----
+      farm(-360,-300,811);farm(-330,130,822);farm(-400,-200,833);
+      // ---- mountain summit hut + mast ----
+      {const g=padH(-330,360);w.building(-333,355.4,-327,364.6,g,1,3.2,{col:0xc8c0ae,floor:0x5a4a3a,ground:true,roofAccess:true,doors:{z0:[[1.5,3.5]],x0:[[3,5]]}});
+       w._box(-336.3,g,366,-335.7,g+16,366.6,0x5d6268)}
+      // ---- windmills ----
+      for(const[x,z]of[[-270,30],[-370,-80]]){const g=padH(x,z);w._box(x-2.2,g-.3,z-2.2,x+2.2,g+13,z+2.2,0xd8d0bc);w._box(x-2.6,g+13,z-2.6,x+2.6,g+15,z+2.6,0x6a4a3a);
+        const mx=w.mirror?-x:x,mz=w.mirror?-z:z;const c=hexRGB(0xe6e0d0);w.vis.box(mx-.25,g+4,mz+2.6,mx+.25,g+24,mz+3,0xe6e0d0);w.vis.box(mx-10,g+13.75,mz+2.6,mx+10,g+14.25,mz+3,0xe6e0d0)}
+      // ---- trench sandbags ----
+      for(let i=0;i<EV_TR.length-1;i++){const a=EV_TR[i],b=EV_TR[i+1];for(let t=.25;t<.8;t+=.5)w.gbox(lerp(a[0],b[0],t)+2.4,lerp(a[1],b[1],t),.9,.6,3,0xa8966a)}
+      // ---- dry-stone walls along the field roads (alternating sides, gaps every few metres) ----
+      for(let si=0;si<EV_ROADS.length;si+=2){const s=EV_ROADS[si],dx=s[2]-s[0],dz=s[3]-s[1],L=Math.hypot(dx,dz),ux=dx/L,uz=dz/L,alongX=Math.abs(dx)>=Math.abs(dz);
+        for(let t=8;t<L-8;t+=13){const side=((t/13)|0)%2?1:-1,px=s[0]+ux*t-uz*4.4*side,pz=s[1]+uz*t+ux*4.4*side;
+          if(EV_PADS.some(p=>Math.abs(px-p[0])<p[2]+3&&Math.abs(pz-p[1])<p[3]+3)||Math.abs(px-EV_R(pz))<22||px>-14||Math.hypot(px+215,pz+215)<58)continue;
+          const g=w.T(px,pz);if(alongX)w.wall(px-2.2,pz,px+2.2,pz,g-.35,1.6,.55,STN);else w.wall(px,pz-2.2,px,pz+2.2,g-.35,1.6,.55,STN)}}
+      // ---- hunting stands ----
+      for(const[x,z]of[[-360,250],[-250,-380],[-430,-330],[-140,170],[-300,300]])stand(x,z);
+      // ---- forests (jittered grid where the forest mask is high) + scattered meadow trees and bushes ----
+      const inPad=(x,z,m)=>EV_PADS.some(p=>Math.abs(x-p[0])<p[2]+m&&Math.abs(z-p[1])<p[3]+m);
+      const blocked=(x,z,m)=>inPad(x,z,m)||evRoadD(x,z)<5+m||Math.abs(x-EV_R(z))<20||Math.hypot(x+215,z+215)<58||x<-458||Math.abs(z)>478||x>-12||(x>-232&&x<-180&&z>-112&&z<32);
+      for(let gx=-490;gx<-14;gx+=8)for(let gz=-486;gz<486;gz+=8){const x=gx+w.rnd()*6,z=gz+w.rnd()*6,f=evForest(x,z),rr=w.rnd(),kind=w.rnd()<.6?0:1,ht=8+w.rnd()*7;
+        if(f>.45&&rr<.55){if(!blocked(x,z,4)&&w.T(x,z)<40)w.tree(x,z,ht,kind,TC)}
+        else if(f>.25&&rr<.12){if(!blocked(x,z,3))w.bush(x,z,1.1+w.rnd()*.8,w.rnd()<.5?0x3f5e2a:0x4f6d30)}
+        else if(rr<.012){if(!blocked(x,z,4)&&w.T(x,z)<40)w.tree(x,z,ht,1,TC)}}
+    },1777);
+    // ---- cover everywhere (sandbags, crates, wrecks, log piles, hay, walls, rocks, bush thickets) ----
+    const nearRiver=(x,z)=>Math.abs(x-EV_R(z))<16;
+    w.scatter({n:330,x0:-470,x1:-20,z0:-470,z1:470,gap:7,seed:901,kinds:[['sand',2],['sandL',1.5],['crates',1.2],['logpile',1.5],['hay',1.2],['rock',2.5],['wall',2],['bushes',2.5],['car',1],['barrels',.6],['barrier',.6]],
+      cols:{wall:0x8f897c,rock:0x857f72},excl:(x,z)=>x<-458||nearRiver(x,z)||Math.hypot(x+215,z+215)<58||Math.abs(z)>472});
+    w.scatter({n:24,x0:-70,x1:-14,z0:-470,z1:470,gap:9,seed:902,kinds:[['sand',2],['sandL',2],['rock',2],['logpile',1],['bushes',2]],excl:(x,z)=>nearRiver(x,z)||Math.abs(z)>472});
+  }
+};
+MAPS.push(MAP_EVENT);
+
 // ================= SETTINGS =================
 const SET={sens:1,fov:78,vol:.7,q:1,calls:1};
 try{Object.assign(SET,JSON.parse(localStorage.getItem('hitcall_set')||'{}'))}catch(e){}
@@ -1291,11 +1483,11 @@ function buildMapScene(w){
   if(mapGroup){scene.remove(mapGroup);mapGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()})}
   mapGroup=new THREE.Group();scene.add(mapGroup);const d=w.def;
   // terrain
-  const hw=w.hw,hd=w.hd,hm=w.hm;const pos=new Float32Array(hw*hd*3),col=new Float32Array(hw*hd*3);
+  const HW=w.hw,HD=w.hd,hm=w.hm,ms=d.meshStep||1,sp=w.hr*ms;const hw=Math.floor((HW-1)/ms)+1,hd=Math.floor((HD-1)/ms)+1;const pos=new Float32Array(hw*hd*3),col=new Float32Array(hw*hd*3);
   for(let iz=0;iz<hd;iz++)for(let ix=0;ix<hw;ix++){
-    const i=iz*hw+ix,x=w.x0+ix,z=w.z0+iz,h=hm[i];
-    const hx=hm[iz*hw+Math.min(ix+1,hw-1)]-hm[iz*hw+Math.max(ix-1,0)],hz=hm[Math.min(iz+1,hd-1)*hw+ix]-hm[Math.max(iz-1,0)*hw+ix];
-    const s=Math.hypot(hx,hz)*.5;const n=w.N(x*.09+40,z*.09-20);
+    const i=iz*hw+ix,x=w.x0+ix*sp,z=w.z0+iz*sp,h=w.terrainH(x,z);
+    const hx=w.terrainH(x+sp,z)-w.terrainH(x-sp,z),hz=w.terrainH(x,z+sp)-w.terrainH(x,z-sp);
+    const s=Math.hypot(hx,hz)*.5/sp;const n=w.N(x*.09+40,z*.09-20);
     const c=hexRGB(d.ground(x,z,h,s,n));const j=.93+.1*w.N(x*.6,z*.6);
     pos[i*3]=x;pos[i*3+1]=h;pos[i*3+2]=z;col[i*3]=c[0]*j;col[i*3+1]=c[1]*j;col[i*3+2]=c[2]*j;
   }
@@ -1306,7 +1498,7 @@ function buildMapScene(w){
   if(w.water>-100){const wm=new THREE.Mesh(new THREE.PlaneGeometry(w.W,w.D),new THREE.MeshLambertMaterial({color:0x35525c,transparent:true,opacity:.8}));wm.rotation.x=-Math.PI/2;wm.position.y=w.water;mapGroup.add(wm)}
   // outer apron
   const avg=(arr)=>arr.reduce((a,b)=>a+b,0)/arr.length;const rowN=[],rowS=[],colW=[],colE=[];
-  for(let ix=0;ix<hw;ix++){rowN.push(hm[ix]);rowS.push(hm[(hd-1)*hw+ix])}for(let iz=0;iz<hd;iz++){colW.push(hm[iz*hw]);colE.push(hm[iz*hw+hw-1])}
+  for(let ix=0;ix<HW;ix++){rowN.push(hm[ix]);rowS.push(hm[(HD-1)*HW+ix])}for(let iz=0;iz<HD;iz++){colW.push(hm[iz*HW]);colE.push(hm[iz*HW+HW-1])}
   const apMat=new THREE.MeshLambertMaterial({color:new THREE.Color().setRGB(...hexRGB(d.ground(0,0,avg(rowN),0,0))).multiplyScalar(.85)});
   const X0=w.x0+.5,X1=w.x0+w.W-.5,Z0=w.z0+.5,Z1=w.z0+w.D-.5,F=700;
   const strip=(a0,a1,b0,b1,y)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(a1-a0,b1-b0),apMat);m.rotation.x=-Math.PI/2;m.position.set((a0+a1)/2,y-.6,(b0+b1)/2);mapGroup.add(m)};
@@ -1318,7 +1510,7 @@ function buildMapScene(w){
 }
 
 // ================= CHARACTERS (instanced) =================
-const MAXE=140;
+const MAXE=440;
 const PARTS=['legL','legR','torso','vest','armL','armR','head','helmet','goggles','gun','mark'];
 const TEAMCOL=[{shirt:0xa39272,pants:0x8f7f5f,vest:0x5f5844,helm:0x2c6be0,mark:0x5aa0ff},{shirt:0x5d6b40,pants:0x4f5c36,vest:0x3c432e,helm:0xd33a2c,mark:0xff6a5a}];
 const SKIN=[0xe2b894,0xc89670,0x9a6b4a,0xf0cba8,0x7a5136];
@@ -1376,7 +1568,7 @@ function poseChar(i,e){
 function charsCommit(){for(const p of PARTS)CH[p].instanceMatrix.needsUpdate=true}
 
 // ================= BB RENDER =================
-const BBMAX=900;let bbLines,bbPos,bbCol,spentPts,spentPos,spentN=0,spentDirty=false;const SPENT=5000;
+const BBMAX=2400;let bbLines,bbPos,bbCol,spentPts,spentPos,spentN=0,spentDirty=false;const SPENT=8000;
 function bbRenderInit(){
   bbPos=new Float32Array(BBMAX*6);bbCol=new Float32Array(BBMAX*6);
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(bbPos,3).setUsage(THREE.DynamicDrawUsage));g.setAttribute('color',new THREE.BufferAttribute(bbCol,3).setUsage(THREE.DynamicDrawUsage));
@@ -1480,8 +1672,8 @@ const flightTime=(wi,d)=>WPN[wi].tof[clamp(d|0,1,169)];
 
 // ================= STATE =================
 const RAD=.33,H_ST=1.75,H_CR=1.15,EYE_ST=1.6,EYE_CR=1.05,GRAV=22,JUMP=7.3;
-const G={alive:[50,50],late:false,hostEnded:-1,mode:'menu',world:null,nav:null,mapIdx:0,diff:1,rtw:2,myTeam:0,myWpn:0,E:[],me:null,phase:'none',phaseT:0,round:0,score:[0,0],timeLeft:0,time:0,playStart:0,
-  postF:[],huntF:[null,null],huntT:0,huntTeam:0,timeScale:1,paused:false,seed:1,specIdx:-1,specT:0,lastBeep:0,stats:{kills:0,shots:0,hits:0},deathInfo:null,roundWinner:-1,matchOver:false};
+const G={coverScale:1,alive:[50,50],late:false,hostEnded:-1,mode:'menu',world:null,nav:null,mapIdx:0,diff:1,rtw:2,myTeam:0,myWpn:0,E:[],me:null,phase:'none',phaseT:0,round:0,score:[0,0],timeLeft:0,time:0,playStart:0,
+  pCache:new Map(),pJobs:new Map(),hJob:null,huntBuf:[null,null],perTeam:50,squads:[],huntF:[null,null],huntT:0,huntTeam:0,timeScale:1,paused:false,seed:1,specIdx:-1,specT:0,lastBeep:0,stats:{kills:0,shots:0,hits:0},deathInfo:null,roundWinner:-1,matchOver:false};
 const WORLDS=[],NAVS=[];
 function getWorld(i){if(!WORLDS[i])WORLDS[i]=new World(MAPS[i]);return WORLDS[i]}
 function getNav(i){if(!NAVS[i]){const t0=performance.now();NAVS[i]=new Nav(getWorld(i));console.log('nav',MAPS[i].id,NAVS[i].N,'nodes',Math.round(performance.now()-t0),'ms')}return NAVS[i]}
@@ -1525,7 +1717,7 @@ function spawnBB(x,y,z,vx,vy,vz,w,team,own,real,col){
 function killBB(i){const j=--BB.n;if(i!==j){for(const k of['px','py','pz','vx','vy','vz','ox','oz','age','w','team','own','real','col'])BB[k][i]=BB[k][j]}}
 function clearBBs(){BB.n=0}
 let entGrid=new Map();
-function buildEntGrid(){entGrid.clear();for(const e of G.E){if(!e.alive||e.gone)continue;const k=((e.x+200)/6|0)*1000+((e.z+200)/6|0);let a=entGrid.get(k);if(!a){a=[];entGrid.set(k,a)}a.push(e)}}
+function buildEntGrid(){entGrid.clear();for(const e of G.E){if(!e.alive||e.gone)continue;const k=((e.x+600)/6|0)*1000+((e.z+600)/6|0);let a=entGrid.get(k);if(!a){a=[];entGrid.set(k,a)}a.push(e)}}
 function updateBBs(dt){
   const W=G.world;
   for(let i=0;i<BB.n;i++){
@@ -1537,7 +1729,7 @@ function updateBBs(dt){
     const ex=hitT<2?lx:bx,ey=hitT<2?ly:by,ez=hitT<2?lz:bz;
     // characters
     let victim=null,vt=2;const sdx=ex-ax,sdy=ey-ay,sdz=ez-az,sl2=sdx*sdx+sdz*sdz;
-    const mx=(ax+ex)/2,mz=(az+ez)/2,gx=(mx+200)/6|0,gz=(mz+200)/6|0;
+    const mx=(ax+ex)/2,mz=(az+ez)/2,gx=(mx+600)/6|0,gz=(mz+600)/6|0;
     for(let cx=gx-1;cx<=gx+1;cx++)for(let cz=gz-1;cz<=gz+1;cz++){const arr=entGrid.get(cx*1000+cz);if(!arr)continue;
       for(const e of arr){
         if(e.idx===BB.own[i])continue;
@@ -1609,6 +1801,7 @@ function spawnPoints(team,count){
 function placeEnt(e,p){e.x=e.rx=p[0];e.y=e.ry=p[1];e.z=e.rz=p[2];e.vx=e.vy=e.vz=0;e.yaw=e.team===0?-Math.PI/2:Math.PI/2;e.yaw+=(Math.random()-.5)*.4;e.pitch=0;e.alive=true;e.gone=false;e.deadT=0;e.crouch=false;e.crs=0;e.mag=WPN[e.wpn].mag;e.mags=null;e.reloadT=0;e.fireCD=0;e.ground=true;e.pend=0;e.tx=e.x;e.ty=e.y;e.tz=e.z;e.tyaw=e.yaw;e.lx=e.x;e.lz=e.z}
 function assignPost(e){
   const W=G.world,ai=e.ai,own=e.team===0?-1:1;const r=Math.random();
+  if(e.squad&&e.squad.route.length){const s=e.squad;if(s.ri<s.route.length){ai.post=s.route[s.ri];ai.state='move';ai.holdMax=1e9}else ai.state='hunt';return}
   let pool;const sn=WPN[e.wpn].id==='sniper';
   if(r<(sn?.6:.25))pool=W.posts.map((p,i)=>p.side===own?i:-1).filter(i=>i>=0&&(!sn||W.posts[i].hold));
   else if(r<(sn?.9:.72))pool=W.posts.map((p,i)=>p.side===0?i:-1).filter(i=>i>=0);
@@ -1621,28 +1814,96 @@ function assignPost(e){
 }
 function mkAI(e){e.ai={state:'move',post:-1,holdT:0,holdMax:10,tgt:null,vis:false,react:0,seeT:-99,scanT:Math.random()*.3,burst:4,burstCD:0,settle:1,strafe:0,strafeT:0,stuckT:0,stuck:0,sx:e.x,sz:e.z,alertT:0,alertYaw:0,lookT:0,lookYaw:e.yaw,wantCrouch:false,jitT:0,jx:0,jz:0,lastSeen:[0,0,0],mode:'obj',path:null,pi:0,pathT:0,arrived:false,coverN:-1,coverCD:0,peek:0,peekT:0,inT:0,pauseT:2,side:0,supT:-99,supX:0,supZ:0,thX:0,thZ:0,thT:-99,boundT:2+Math.random()*3,bound:false,lsObj:null,pushUntil:-99,inMax:15};assignPost(e)}
 
-function computePostFields(){
-  const W=G.world,nav=G.nav;G.postF=W.posts.map(p=>{const y=p.y==null?W.terrainH(p.x,p.z):p.y;return nav.field([nav.nodeAt(p.x,y,p.z)])});
+function postNode(pi){const W=G.world,p=W.posts[pi];const y=p.y==null?W.terrainH(p.x,p.z):p.y;return G.nav.nodeAt(p.x,y,p.z)}
+function computePostFields(){ // small maps: all post fields up front; big maps: computed lazily in time slices (postF)
+  G.pCache=new Map();G.pJobs=new Map();G.hJob=null;G.huntBuf=[null,null];
+  if(G.nav.N>120000)return;
+  G.world.posts.forEach((p,i)=>G.pCache.set(i,{f:G.nav.field([postNode(i)]),used:0}));
+}
+function postF(pi){
+  const c=G.pCache.get(pi);if(c){c.used=G.time;return c.f}
+  if(pi>=0&&!G.pJobs.has(pi)&&G.nav)G.pJobs.set(pi,G.nav.fieldJob([postNode(pi)]));
+  return null;
+}
+function navJobs(){
+  if(!G.nav)return;
+  for(const[pi,job]of G.pJobs){if(job.step(22000)){G.pJobs.delete(pi);G.pCache.set(pi,{f:job.res,used:G.time});
+      if(G.pCache.size>14){let old=-1,ot=1e18;for(const[k,v]of G.pCache)if(v.used<ot){ot=v.used;old=k}G.pCache.delete(old)}}break}
 }
 function huntFields(dt){
+  const nav=G.nav;
+  if(nav.N>120000){ // time-sliced on big maps: one team at a time, double-buffered
+    if(!G.hJob){const t=G.huntTeam;const src=[];for(const o of G.E){if(o.alive&&!o.gone&&o.team!==t){const n=nav.nodeAt(o.x,o.y,o.z);if(n>=0)src.push(n)}}
+      if(!src.length){G.huntTeam^=1;return}G.hJob={t,job:nav.fieldJob(src,G.huntBuf[t])}}
+    if(G.hJob.job.step(20000)){const t=G.hJob.t;G.huntBuf[t]=G.huntF[t];G.huntF[t]=G.hJob.job.res;G.hJob=null;G.huntTeam^=1}
+    return;
+  }
   G.huntT-=dt;if(G.huntT>0&&G.huntF[0]&&G.huntF[1])return;G.huntT=.6;
-  const teams=(!G.huntF[0]||!G.huntF[1])?[0,1]:[G.huntTeam^=1];const nav=G.nav;
+  const teams=(!G.huntF[0]||!G.huntF[1])?[0,1]:[G.huntTeam^=1];
   for(const t of teams){const src=[];for(const o of G.E){if(o.alive&&!o.gone&&o.team!==t){const n=nav.nodeAt(o.x,o.y,o.z);if(n>=0)src.push(n)}}
     if(src.length)G.huntF[t]=nav.field(src)}
 }
 function setupRound(humans){ // humans: [{team,ent?}] for mp; builds entities
-  clearBBs();clearSpent();G.E=[];G.specIdx=-1;G.deathInfo=null;G.timeScale=1;
+  clearBBs();clearSpent();G.E=[];G.specIdx=-1;G.deathInfo=null;G.timeScale=1;G.squads=[];
   const counts=[0,0];for(const h of humans)counts[h.team]++;
-  const pts=[spawnPoints(0,PER_TEAM),spawnPoints(1,PER_TEAM)];const used=[0,0];
-  for(const h of humans){const e=h.ent;e.idx=G.E.length;G.E.push(e);placeEnt(e,pts[e.team][used[e.team]++]||pts[e.team][0])}
+  const per=G.perTeam,sq=!!G.world.def.squads;const pts=sq?null:[spawnPoints(0,per),spawnPoints(1,per)];const used=[0,0];
+  for(const h of humans){const e=h.ent;e.idx=G.E.length;e.squad=null;G.E.push(e);if(!sq)placeEnt(e,pts[e.team][used[e.team]++]||pts[e.team][0])}
   let slot=0;
-  for(let t=0;t<2;t++){for(let i=counts[t];i<PER_TEAM;i++){
+  for(let t=0;t<2;t++){for(let i=counts[t];i<per;i++){
     const e=newEnt('bot',t,botName(slot,G.seed));e.slot=slot++;e.idx=G.E.length;const r=Math.random();e.wpn=r<.42?0:r<.56?1:r<.66?2:r<.82?3:4;e.spd=4.3*(.9+Math.random()*.2);
-    G.E.push(e);placeEnt(e,pts[t][used[t]++]||pts[t][0]);mkAI(e)}}
+    G.E.push(e);if(!sq){placeEnt(e,pts[t][used[t]++]||pts[t][0]);mkAI(e)}}}
+  if(sq)setupSquads();
   for(const e of G.E)charColors(e.idx,e.team,e.skin,e.wpn);
   for(let i=G.E.length;i<MAXE;i++)hideChar(i);
-  G.huntF=[null,null];G.huntT=0;if(G.nav)G.nav.claim.fill(0);
+  G.huntF=[null,null];G.huntT=0;G.hJob=null;if(G.nav)G.nav.claim.fill(0);
 }
+// ================= SQUADS (event maps) =================
+const SQUAD_NAMES=['Alpha','Bravo','Charlie','Delta','Echo','Foxtrot','Golf','Hotel','India','Juliett','Kilo','Lima','Mike','November','Oscar','Papa'];
+function squadSizes(total){const out=[];let r=total;while(r>30){let s=10+((Math.random()*21)|0);if(r-s<10)s=r-10;out.push(s);r-=s}if(r>0)out.push(r);return out}
+function squadSpots(cx,cz,count){
+  const nav=G.nav,W=G.world,pts=[];
+  if(nav){const k=nav.k,ix0=Math.floor((cx-W.x0)/k),iz0=Math.floor((cz-W.z0)/k);
+    for(let r=0;r<40&&pts.length<count;r++)for(let dz=-r;dz<=r;dz++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dz))!==r)continue;const jx=ix0+dx,jz=iz0+dz;if(jx<0||jz<0||jx>=nav.cw||jz>=nav.cd)continue;
+      const ci=jz*nav.cw+jx;for(let m=nav.cs[ci];m<nav.cs[ci+1];m++){const x=nav.cx(m),z=nav.cz(m);if(Math.abs(nav.F[m]-W.terrainH(x,z))>.3||nav.aS[m+1]-nav.aS[m]<5)continue;
+        if(pts.length<count&&!pts.some(p=>(p[0]-x)**2+(p[2]-z)**2<2.5))pts.push([x+(Math.random()-.5)*.4,nav.F[m],z+(Math.random()-.5)*.4])}}}
+  while(pts.length<count){const x=cx+(Math.random()-.5)*12,z=cz+(Math.random()-.5)*12;pts.push([x,W.floorAt(x,z,999,RAD),z])}
+  return pts;
+}
+function planSquadRoute(s){
+  const W=G.world,own=s.team===0?-1:1,used=[];
+  const pick=(side)=>{let best=-1,bs=1e9;W.posts.forEach((p,i)=>{if(p.side!==side||used.includes(i))return;const sc=Math.abs(p.z-s.lane)+Math.abs(p.x)*(side===own?.15:.25)+Math.random()*150;if(sc<bs){bs=sc;best=i}});if(best>=0)used.push(best);return best};
+  s.route=[pick(own),pick(0),pick(-own)].filter(i=>i>=0);s.ri=0;s.state='move';
+}
+function squadAssign(s){
+  for(const m of s.members){if(m.kind!=='bot'||!m.ai)continue;const ai=m.ai;
+    if(s.ri<s.route.length){ai.post=s.route[s.ri];ai.state='move';ai.holdMax=1e9}else{ai.state='hunt';releaseClaim(m)}}
+}
+function setupSquads(){
+  for(let t=0;t<2;t++){
+    const mem=G.E.filter(e=>e.team===t);const sizes=squadSizes(mem.length);let i=0;const n=sizes.length;
+    sizes.forEach((sz,si)=>{
+      const lane0=-400+(si+.5)*800/n,lane=t===0?lane0:-lane0;
+      const s={id:G.squads.length,team:t,name:SQUAD_NAMES[si%SQUAD_NAMES.length],members:mem.slice(i,i+sz),lane,route:[],ri:0,state:'move',holdT:0,leader:null,lag:0,shareT:0};i+=sz;G.squads.push(s);
+      const spots=squadSpots(t===0?G.world.x0+30:-(G.world.x0+30),lane,s.members.length);
+      s.members.forEach((e,k)=>{e.squad=s;placeEnt(e,spots[k]);if(e.kind==='bot')mkAI(e)});
+      planSquadRoute(s);squadAssign(s);
+    });
+  }
+}
+function squadsUpdate(dt){
+  for(const s of G.squads){
+    const alive=s.members.filter(m=>m.alive&&!m.gone);if(!alive.length)continue;
+    s.leader=alive.find(m=>m.kind==='bot')||alive[0];
+    let far=0;for(const m of alive)if((m.x-s.leader.x)**2+(m.z-s.leader.z)**2>1225)far++;s.lag=far/alive.length;
+    if(s.ri>=s.route.length)continue;
+    const P=G.world.posts[s.route[s.ri]];
+    if(s.state==='move'){let near=0;for(const m of alive)if((m.x-P.x)**2+(m.z-P.z)**2<1024)near++;
+      if(near>=Math.max(1,Math.ceil(alive.length*.5))){s.state='hold';s.holdT=(P.side===(s.team===0?-1:1)?25:12)+Math.random()*30}}
+    else{s.holdT-=dt;if(s.holdT<=0||G.late){s.ri++;s.state='move';squadAssign(s)}}
+  }
+}
+function shareThreat(e,o){const s=e.squad;if(!s||G.time-s.shareT<.5)return;s.shareT=G.time;
+  for(const m of s.members){if(m===e||!m.ai||!m.alive)continue;if((m.x-e.x)**2+(m.z-e.z)**2<8100&&G.time-m.ai.thT>1.5){m.ai.thX=o.x;m.ai.thZ=o.z;m.ai.thT=G.time}}}
 function aliveCounts(){const c=[0,0];for(const e of G.E)if(e.alive&&!e.gone)c[e.team]++;return c}
 
 // ================= BOT AI =================
@@ -1661,7 +1922,7 @@ function botScan(e){
     const o=_cand[bi];_cand.splice(bi,2);
     if(G.world.los(e.x,eye,e.z,o.x,o.y+(o.crouch?.85:1.3),o.z)){
       if(ai.tgt!==o){ai.tgt=o;ai.react=D.react*(.7+Math.random()*.6)+Math.sqrt(bd)*.005;ai.settle=1;ai.wantCrouch=Math.random()<.4;ai.strafe=Math.random()<.5?(Math.random()<.5?-1:1):0;ai.strafeT=1+Math.random()*2}
-      ai.vis=true;ai.seeT=G.time;ai.lastSeen[0]=o.x;ai.lastSeen[1]=o.y;ai.lastSeen[2]=o.z;spot(e,o);return}}
+      ai.vis=true;ai.seeT=G.time;ai.lastSeen[0]=o.x;ai.lastSeen[1]=o.y;ai.lastSeen[2]=o.z;spot(e,o);shareThreat(e,o);return}}
   if(ai.tgt&&G.time-ai.seeT>4)ai.tgt=null;
 }
 function spot(e,o){if(G.me&&e.team===G.me.team)o.spotT=G.time+2.2}
@@ -1669,7 +1930,7 @@ function steerTo(e,tx,tz,speed){const dx=tx-e.x,dz=tz-e.z,d=Math.hypot(dx,dz)||1
 function fieldTarget(e,F){
   if(!F)return null;const nav=G.nav;const n=nav.nodeAt(e.x,e.y,e.z);if(n<0)return null;
   const nx=F.next[n];if(nx<0)return F.dist[n]===0?'goal':null;
-  let tn=nx;const cx=nav.cx(nx),cz=nav.cz(nx);if((cx-e.x)**2+(cz-e.z)**2<.2&&F.next[nx]>=0)tn=F.next[nx];
+  let tn=nx;const cx=nav.cx(nx),cz=nav.cz(nx);if((cx-e.x)**2+(cz-e.z)**2<.2*nav.k*nav.k&&F.next[nx]>=0)tn=F.next[nx];
   return[nav.cx(tn),nav.cz(tn)];
 }
 function dirIdx(dx,dz){const a=Math.atan2(-dx,-dz);return((Math.round(a/(Math.PI/4))%8)+8)%8}
@@ -1681,21 +1942,21 @@ function seekCover(e,tx,tz,maxCost,opt){
   ai.path=path;ai.pi=1;ai.pathT=0;ai.arrived=false;ai.mode='cover';ai.side=0;return true;
 }
 function coverGood(e,tx,tz){const nav=G.nav,ai=e.ai,n=ai.coverN;if(n<0)return false;const x=nav.cx(n),z=nav.cz(n);
-  if((x-e.x)**2+(z-e.z)**2>1.4)return false;return!!((nav.cLo[n]>>dirIdx(tx-x,tz-z))&1)}
+  if((x-e.x)**2+(z-e.z)**2>1.4*nav.k*nav.k)return false;return!!((nav.cLo[n]>>dirIdx(tx-x,tz-z))&1)}
 function followPath(e,spd){
   const ai=e.ai,nav=G.nav;if(!ai.path)return null;
-  while(ai.pi<ai.path.length){const n=ai.path[ai.pi];const x=nav.cx(n),z=nav.cz(n);if((x-e.x)**2+(z-e.z)**2<.35&&Math.abs(nav.F[n]-e.y)<1.6)ai.pi++;else break}
+  while(ai.pi<ai.path.length){const n=ai.path[ai.pi];const x=nav.cx(n),z=nav.cz(n);if((x-e.x)**2+(z-e.z)**2<.35*nav.k*nav.k&&Math.abs(nav.F[n]-e.y)<1.6)ai.pi++;else break}
   if(ai.pi>=ai.path.length){ai.path=null;ai.arrived=true;return null}
   const n=ai.path[ai.pi];return steerTo(e,nav.cx(n),nav.cz(n),spd);
 }
 // bots standing where the nav graph cannot reach the enemy: hop to the nearest connected node (<= 7 m)
-function rescue(e,F){const nav=G.nav,W=G.world;const ix=Math.floor(e.x-W.x0),iz=Math.floor(e.z-W.z0);let best=-1,bd=1e9;
-  for(let dz=-7;dz<=7;dz++)for(let dx=-7;dx<=7;dx++){const jx=ix+dx,jz=iz+dz;if(jx<0||jz<0||jx>=nav.cw||jz>=nav.cd)continue;const ci=jz*nav.cw+jx;
-    for(let m=nav.cs[ci];m<nav.cs[ci+1];m++){if(!(F.dist[m]<1e9))continue;const d=dx*dx+dz*dz+Math.abs(nav.F[m]-e.y)*2;if(d<bd){bd=d;best=m}}}
+function rescue(e,F){const nav=G.nav,W=G.world;const ix=Math.floor((e.x-W.x0)/nav.k),iz=Math.floor((e.z-W.z0)/nav.k);let best=-1,bd=1e9;const R=Math.ceil(7/nav.k);
+  for(let dz=-R;dz<=R;dz++)for(let dx=-R;dx<=R;dx++){const jx=ix+dx,jz=iz+dz;if(jx<0||jz<0||jx>=nav.cw||jz>=nav.cd)continue;const ci=jz*nav.cw+jx;
+    for(let m=nav.cs[ci];m<nav.cs[ci+1];m++){if(!(F.dist[m]<1e9))continue;const d=(dx*dx+dz*dz)*nav.k*nav.k+Math.abs(nav.F[m]-e.y)*2;if(d<bd){bd=d;best=m}}}
   if(best>=0){e.x=nav.cx(best);e.z=nav.cz(best);e.y=nav.F[best];e.vx=e.vz=e.vy=0}}
 // last resort for bots wedged somewhere: snap to the next free nav node (at most a cell or two away)
 function unstick(e){const nav=G.nav,W=G.world;const n=nav.nodeAt(e.x,e.y,e.z);if(n<0)return;
-  const F=e.ai.state==='move'?G.postF[e.ai.post]:G.huntF[e.team];const c=[];if(F&&F.next[n]>=0)c.push(F.next[n]);c.push(n);
+  const F=e.ai.state==='move'?postF(e.ai.post):G.huntF[e.team];const c=[];if(F&&F.next[n]>=0)c.push(F.next[n]);c.push(n);
   for(const m of c){const x=nav.cx(m),z=nav.cz(m),y=nav.F[m];if(Math.hypot(x-e.x,z-e.z)<3&&!W.blocked(x,z,y,H_ST,RAD)){e.x=x;e.z=z;e.y=y;e.vx=e.vz=e.vy=0;return}}}
 function botUpdate(e,dt){
   const ai=e.ai,D=DIFF[G.diff],wp=WPN[e.wpn],nav=G.nav;
@@ -1708,14 +1969,15 @@ function botUpdate(e,dt){
   const supp=G.time-ai.supT<1.6;
   if(supp&&!vis){ai.thX=ai.supX;ai.thZ=ai.supZ;ai.thT=Math.max(ai.thT,ai.supT)}
   const thAge=G.time-ai.thT,dT=Math.hypot(ai.thX-e.x,ai.thZ-e.z);
-  let wx=0,wz=0,face=null,crouch=false,mayFire=false;const spd=e.spd*wp.move;
+  let wx=0,wz=0,face=null,crouch=false,mayFire=false;let spd=e.spd*wp.move;
+  if(e.squad&&ai.state==='move'&&!vis){const L=e.squad.leader;if(L===e){if(e.squad.lag>.3)spd*=.7}else if(L&&(L.x-e.x)**2+(L.z-e.z)**2>1225)spd*=1.15}
   if(e.mag<=0&&e.reloadT<=0)e.reloadT=wp.reload*(1+Math.random()*.3);
   // ---- cover decisions ----
   const engaged=(vis&&dT<wp.botRange*1.2)||supp||(e.reloadT>0&&thAge<4);
   if(ai.mode==='incover'&&thAge<6&&!coverGood(e,ai.thX,ai.thZ)){ai.mode='obj';releaseClaim(e);ai.coverCD=0}
   if(engaged&&ai.mode==='obj'&&!(G.late&&e.reloadT<=0)){
     if(coverGood(e,ai.thX,ai.thZ)){ai.mode='incover';ai.peek=0;ai.peekT=.3;ai.inT=0;ai.bound=false;ai.inMax=(9+Math.random()*13)*(G.diff===2?.8:1)*(G.late?.3:G.timeLeft<150?.5:1);}
-    else if(ai.coverCD<=0&&G.time>ai.pushUntil){ai.coverCD=1+Math.random()*1.2;if(seekCover(e,ai.thX,ai.thZ,dT<14?6:12))ai.bound=false}
+    else if(ai.coverCD<=0&&G.time>ai.pushUntil){ai.coverCD=1+Math.random()*1.2;if(seekCover(e,ai.thX,ai.thZ,(dT<14?6:12)*G.coverScale,G.coverScale>1?{bushOK:true}:null))ai.bound=false}
   }
   if(ai.mode==='cover'){
     const st=followPath(e,spd*1.12);
@@ -1742,7 +2004,7 @@ function botUpdate(e,dt){
       if(leave){ai.mode='obj';releaseClaim(e);ai.boundT=.4}
       else if(ai.inT>ai.inMax){ // push: bound to cover closer to the enemy, or rush for a few seconds
         ai.mode='obj';releaseClaim(e);ai.coverCD=3;const F=G.huntF[e.team],n0=nav.nodeAt(e.x,e.y,e.z);
-        if(F&&n0>=0&&F.dist[n0]<1e8&&seekCover(e,ai.thX,ai.thZ,16,{field:F,maxField:F.dist[n0]-6,minThreat:4}))ai.bound=true;else ai.pushUntil=G.time+4}
+        if(F&&n0>=0&&F.dist[n0]<1e8&&seekCover(e,ai.thX,ai.thZ,16*G.coverScale,{field:F,maxField:F.dist[n0]-6,minThreat:4}))ai.bound=true;else ai.pushUntil=G.time+4}
     }
   }else{
     if(vis){
@@ -1754,13 +2016,14 @@ function botUpdate(e,dt){
       // bounding: with a known threat, advance from cover to cover
       ai.boundT-=dt;
       if(thAge<12&&ai.boundT<=0&&ai.state!=='hold'&&!G.late){ai.boundT=1.5+Math.random()*2;
-        const F=ai.state==='move'?G.postF[ai.post]:G.huntF[e.team];const n=nav.nodeAt(e.x,e.y,e.z);
-        if(F&&n>=0&&F.dist[n]<1e8&&seekCover(e,ai.thX,ai.thZ,14,{field:F,maxField:F.dist[n]-4,minThreat:5}))ai.bound=true}
+        const F=ai.state==='move'?postF(ai.post):G.huntF[e.team];const n=nav.nodeAt(e.x,e.y,e.z);
+        if(F&&n>=0&&F.dist[n]<1e8&&seekCover(e,ai.thX,ai.thZ,14*G.coverScale,{field:F,maxField:F.dist[n]-4,minThreat:5}))ai.bound=true}
       if(ai.mode==='obj'){
         if(t&&G.time-ai.seeT<4){const ft=fieldTarget(e,G.huntF[e.team]);if(Array.isArray(ft))[wx,wz]=steerTo(e,ft[0],ft[1],spd*.9);const ls=ai.lastSeen;face=Math.atan2(-(ls[0]-e.x),-(ls[2]-e.z))}
         else if(ai.state==='move'){
-          const ft=fieldTarget(e,G.postF[ai.post]);
-          if(ft==='goal'){ai.state='hold';ai.holdT=ai.holdMax;ai.lookT=0;seekCover(e,e.x+(e.team===0?70:-70),e.z,9,{minThreat:0,bushOK:true})}
+          const PF=postF(ai.post),ft=PF?fieldTarget(e,PF):'wait';
+          if(ft==='wait'){const P=G.world.posts[ai.post];[wx,wz]=steerTo(e,P.x,P.z,spd*.6)}
+          else if(ft==='goal'){ai.state='hold';ai.holdT=ai.holdMax;ai.lookT=0;seekCover(e,e.x+(e.team===0?70:-70),e.z,9,{minThreat:0,bushOK:true})}
           else if(ft===null)ai.state='hunt';
           else[wx,wz]=steerTo(e,ft[0],ft[1],spd);
         }else if(ai.state==='hold'){
@@ -1790,10 +2053,10 @@ function botUpdate(e,dt){
     }
   }
   // unreachable-from-here check (every 2 s)
-  ai.chkT=(ai.chkT||0)-dt;if(ai.chkT<=0){ai.chkT=2;const F=ai.state==='move'?G.postF[ai.post]:G.huntF[e.team];const n=nav.nodeAt(e.x,e.y,e.z);
+  ai.chkT=(ai.chkT||0)-dt;if(ai.chkT<=0){ai.chkT=2;const F=ai.state==='move'?postF(ai.post):G.huntF[e.team];const n=nav.nodeAt(e.x,e.y,e.z);
     if(F&&n>=0&&!(F.dist[n]<1e9)&&ai.mode!=='incover'){ai.noPathT=(ai.noPathT||0)+2;if(ai.noPathT>=6){ai.noPathT=0;if(ai.mode==='cover'){ai.mode='obj';ai.path=null;releaseClaim(e)}rescue(e,F)}}else ai.noPathT=0}
   // separation
-  const k0=((e.x+200)/6|0),k1=((e.z+200)/6|0);
+  const k0=((e.x+600)/6|0),k1=((e.z+600)/6|0);
   for(let a=k0-1;a<=k0+1;a++)for(let b=k1-1;b<=k1+1;b++){const arr=entGrid.get(a*1000+b);if(!arr)continue;for(const o of arr){if(o===e)continue;const dx=e.x-o.x,dz=e.z-o.z,d2=dx*dx+dz*dz;if(d2<1.1&&d2>1e-4){const d=Math.sqrt(d2);wx+=dx/d*(1.05-d)*3;wz+=dz/d*(1.05-d)*3}}}
   // stuck handling
   ai.stuckT+=dt;if(ai.stuckT>1.4){const moved=Math.hypot(e.x-ai.sx,e.z-ai.sz);const wants=Math.hypot(wx,wz)>1;
@@ -1931,6 +2194,7 @@ const e1=v=>B64[v&63];const e2=v=>{v=clamp(Math.round(v),0,4095);return B64[v>>6
 const d1=(s,i)=>B64I[s.charCodeAt(i)]||0;const d2=(s,i)=>((B64I[s.charCodeAt(i)]||0)<<6)|(B64I[s.charCodeAt(i+1)]||0);
 const newer=(a,b)=>{const d=(a-b+4096)%4096;return d>0&&d<2048};
 const ENT_LEN=11;
+function botStr(h){let s='';for(let k=0;k<18;k++){const c=h['b'+k];if(!c)break;s+=c}return s}
 function encEnt(e){const W=G.world;const f=e.team|(e.alive?2:0)|(e.crouch?4:0)|((e.wpn&7)<<3)|(e.gone?64:0);
   return e2(f)+e2((e.x-W.x0)*W.qx)+e2((e.z-W.z0)*W.qz)+e2((e.y+30)*20)+e2(((e.yaw%TAU+TAU)%TAU)/TAU*4096)+e1((clamp(e.pitch,-1.6,1.6)+1.6)/3.2*63)}
 function decEnt(s,i,e){const W=G.world;const f=d2(s,i);
@@ -1977,9 +2241,9 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
       Object.assign(p,{st:this.hostState(),mp:this.settings.map,df:this.settings.diff,rw:this.settings.rtw,rn:G.round,sc:G.score,tl:Math.ceil(G.timeLeft),pt:Math.ceil(G.phaseT),sd:G.seed,wn:G.roundWinner,hb:G.hostEnded===G.round?G.round:null});
       if(this.inGame){
         const bots=this.bots;let s='';for(const e of bots)s+=encEnt(e);
-        p.nb=bots.length;for(let k=0;k<4;k++)p['b'+k]=s.slice(k*ENT_LEN*25,(k+1)*ENT_LEN*25);
+        p.nb=bots.length;const nc=Math.ceil(bots.length/25);for(let k=0;k<18;k++)p['b'+k]=k<nc?s.slice(k*ENT_LEN*25,(k+1)*ENT_LEN*25):null;
         p.bs=this.rings.bs.join('');p.kf=this.rings.kf;p.bh=this.rings.bh;
-      }else{p.nb=null;p.b0=p.b1=p.b2=p.b3=null;p.bs=null;p.kf=null;p.bh=null}
+      }else{p.nb=null;for(let k=0;k<18;k++)p['b'+k]=null;p.bs=null;p.kf=null;p.bh=null}
     }
     if(this.inGame&&G.me){p.rd=G.round;p.al=G.me.alive?1:0;p.ps=encEnt(G.me);p.sh=this.rings.sh.join('');p.hh=this.rings.hh;p.dk=this.myDeath;p.k=G.me.kills}
     else{p.rd=null;p.al=null;p.ps=null;p.sh=null;p.hh=null;p.dk=null}
@@ -2030,7 +2294,7 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
   // ---------- hooks from game ----------
   onShot(e,ox,oy,oz,yaw,pitch){
     if(!this.inGame)return;const r=e===G.me?this.rings.sh:e.kind==='bot'&&this.host?this.rings.bs:null;if(!r)return;
-    r.push(encShot(this.nseq(),e===G.me?0:e.slot,e.wpn,ox,oy,oz,yaw,pitch));const max=e===G.me?10:24;if(r.length>max)r.splice(0,r.length-max);
+    r.push(encShot(this.nseq(),e===G.me?0:e.slot,e.wpn,ox,oy,oz,yaw,pitch));const max=e===G.me?10:(G.perTeam>60?48:24);if(r.length>max)r.splice(0,r.length-max);
   },
   reportHit(v,sh,w){
     if(!this.inGame)return;
@@ -2074,7 +2338,7 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
       if(h.st!==this.lastHostSt){if(h.st==='play')AU.play('whistle');if(h.st==='end'||h.st==='over'){G.score=h.sc||G.score;G.roundWinner=h.wn;G.matchOver=h.st==='over';G.hostEnded=h.hb===G.round?G.round:-1;showRoundOver()}this.lastHostSt=h.st}
       G.timeLeft=h.tl||0;G.phaseT=h.pt||0;G.score=h.sc||G.score;
       // bots
-      const s=(h.b0||'')+(h.b1||'')+(h.b2||'')+(h.b3||'');
+      const s=botStr(h);
       for(let i=0;i<this.bots.length&&i*ENT_LEN+ENT_LEN<=s.length;i++){const e=this.bots[i];const f=decEnt(s,i*ENT_LEN,e);
         if(f.team!==e.team||f.wpn!==e.wpn){e.team=f.team;e.wpn=f.wpn;charColors(e.idx,e.team,e.skin,e.wpn)}
         if(e.alive&&!f.alive){e.alive=false;e.deadT=0;hitCall(e.x,e.y+1.7,e.z)}else if(!e.alive&&f.alive){e.alive=true;e.x=e.tx;e.y=e.ty;e.z=e.tz}
@@ -2108,7 +2372,7 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
     const me=G.me&&G.me.kind==='player'?G.me:newEnt('player',this.team,this.name);me.team=this.team;me.name=this.name;me.wpn=G.myWpn;me.kills=0;me.mags=null;
     me.idx=0;G.E.push(me);G.me=me;this.myDeath=null;
     const sp=spawnPoints(me.team,1)[0];placeEnt(me,sp);
-    this.bots=[];const s=(h.b0||'')+(h.b1||'')+(h.b2||'')+(h.b3||'');
+    this.bots=[];const s=botStr(h);
     for(let i=0;i<(h.nb|0);i++){const e=newEnt('rbot',0,botName(i,G.seed));e.slot=i;e.net=true;e.idx=G.E.length;G.E.push(e);this.bots.push(e);
       if(i*ENT_LEN+ENT_LEN<=s.length){const f=decEnt(s,i*ENT_LEN,e);e.team=f.team;e.wpn=f.wpn;e.alive=f.alive;e.x=e.lx=e.rx=e.tx;e.y=e.ry=e.ty;e.z=e.lz=e.rz=e.tz;e.yaw=e.tyaw}}
     this.humans.clear();
@@ -2131,11 +2395,11 @@ const cv=$('cv');
 
 // ---------- match flow ----------
 function loadMap(i,needNav){
-  G.mapIdx=i;G.world=getWorld(i);G.nav=needNav?getNav(i):(NAVS[i]||null);
-  if(curSceneMap!==i){buildMapScene(G.world);curSceneMap=i;miniBg=mapImage(G.world,2)}
+  G.mapIdx=i;G.perTeam=MAPS[i].perTeam||PER_TEAM;G.coverScale=(MAPS[i].navCell||1)>1?2.2:1;G.world=getWorld(i);G.nav=needNav?getNav(i):(NAVS[i]||null);
+  if(curSceneMap!==i){buildMapScene(G.world);curSceneMap=i;miniBg=mapImage(G.world,Math.min(2,520/G.world.W))}
 }
 function startMatch(){
-  G.phase='none';G.matchOver=false;G.phaseT=0;showLoading(true);
+  G.phase='none';G.matchOver=false;G.phaseT=0;$('loading').textContent=MAPS[G.mapIdx].event?'Grosse Karte wird gebaut … ein paar Sekunden':'Karte wird gebaut …';showLoading(true);
   setTimeout(()=>{
     loadMap(G.mapIdx,true);computePostFields();
     G.score=[0,0];G.round=0;G.matchOver=false;G.seed=(Math.random()*997)|0;G.stats={kills:0,shots:0,hits:0};
@@ -2183,7 +2447,7 @@ function simStep(dt){
     animUpdate(e,dt);
   }
   updateBBs(dt);
-  if(G.mode!=='client'&&G.nav&&G.phase!=='end')huntFields(dt);
+  if(G.mode!=='client'&&G.nav&&G.phase!=='end'){huntFields(dt);navJobs();if(G.squads.length&&G.phase==='play')squadsUpdate(dt)}
 }
 
 // ---------- views ----------
@@ -2270,6 +2534,9 @@ function drawMini(){
     if(e.team===me.team){x.fillStyle=e.team===0?'#4c93ff':'#ff4a3d';x.fillRect(px-2,py-2,4,4)}
     else if(e.spotT>G.time){x.fillStyle=e.team===0?'#9cc4ff':'#ffb0a8';x.beginPath();x.arc(px,py,2.6,0,TAU);x.fill();x.strokeStyle='#000';x.lineWidth=1;x.stroke()}}
   if(big){x.font='600 12px "Barlow Semi Condensed",sans-serif';x.textBaseline='middle';for(const e of G.E){if(e.kind!=='rhuman'||!e.alive||e.gone||e.team!==me.team)continue;const qx=(e.x-w.x0)*sx,qz=(e.z-w.z0)*sz;x.fillStyle='#000';x.fillText(e.name,qx+6,qz+1);x.fillStyle='#fff';x.fillText(e.name,qx+5,qz);x.strokeStyle='#fff';x.lineWidth=1.5;x.strokeRect(qx-3.5,qz-3.5,7,7)}}
+  if(me.squad){for(const m of me.squad.members){if(m===me||!m.alive||m.gone)continue;const qx=(m.x-w.x0)*sx,qz=(m.z-w.z0)*sz;x.strokeStyle='#fff';x.lineWidth=1;x.strokeRect(qx-2.5,qz-2.5,5,5)}
+    const sq=me.squad;if(sq.ri<sq.route.length){const P=w.posts[sq.route[sq.ri]];const gx=(P.x-w.x0)*sx,gz=(P.z-w.z0)*sz;x.save();x.translate(gx,gz);x.rotate(Math.PI/4);x.fillStyle='#ffb066';x.strokeStyle='#000';x.fillRect(-4,-4,8,8);x.strokeRect(-4,-4,8,8);x.restore()}}
+  if(big&&w.def.event){x.font='600 11px "Barlow Semi Condensed",sans-serif';for(const p of w.posts){const qx=(p.x-w.x0)*sx,qz=(p.z-w.z0)*sz;x.fillStyle='rgba(0,0,0,.8)';x.fillText(p.name,qx+5,qz+1);x.fillStyle='#e9e0c6';x.fillText(p.name,qx+4,qz)}}
   const px=(me.x-w.x0)*sx,py=(me.z-w.z0)*sz;x.save();x.translate(px,py);x.rotate(-me.yaw);x.fillStyle='#ff6a1a';x.strokeStyle='#000';x.lineWidth=1;x.beginPath();x.moveTo(0,-6);x.lineTo(4,4);x.lineTo(0,2);x.lineTo(-4,4);x.closePath();x.fill();x.stroke();x.restore();
 }
 
@@ -2391,12 +2658,14 @@ function updateHUD(dt){
   hudT-=dt;
   if(hudT<=0){hudT=.1;
     const c=aliveCounts();$('cntA').textContent=c[0];$('cntB').textContent=c[1];
-    $('barA').firstChild.style.width=(c[0]/PER_TEAM*100)+'%';$('barB').firstChild.style.width=(c[1]/PER_TEAM*100)+'%';
+    $('barA').firstChild.style.width=(c[0]/G.perTeam*100)+'%';$('barB').firstChild.style.width=(c[1]/G.perTeam*100)+'%';
     $('score').textContent=G.score[0]+' : '+G.score[1];
     const tl=Math.max(0,Math.ceil(G.phase==='countdown'?G.phaseT:G.timeLeft));$('timer').textContent=G.phase==='countdown'?'Start in '+tl:Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0');
     const wp=WPN[me.wpn];$('wname').textContent=wp.name;$('amag').textContent=me.mag;
     for(const s of $('slots').children)s.className=+s.dataset.s===me.wpn?'on':'';
     if(NET.inGame)$('netinfo').textContent='Raum '+NET.code+' · '+NET.peers().length+' Spieler'+(NET.host?' · Host':'');
+    const sq=me.squad;$('squadinfo').hidden=!sq;if(sq){const al=sq.members.filter(m=>m.alive&&!m.gone).length;const P=sq.ri<sq.route.length?G.world.posts[sq.route[sq.ri]]:null;
+      $('squadinfo').innerHTML='';const b=document.createElement('b');b.textContent='Trupp '+sq.name;$('squadinfo').append(b,' · '+al+'/'+sq.members.length+' · '+(P?(sq.state==='hold'?'Halten: ':'Ziel: ')+P.name+' · '+Math.round(Math.hypot(P.x-me.x,P.z-me.z))+' m':'Feind jagen'))}
     drawMini();updateBoard();
   }
   $('reload').firstChild.style.width=(me.reloadT>0?(1-me.reloadT/WPN[me.wpn].reload)*100:0)+'%';
@@ -2457,10 +2726,11 @@ $('inSens2').oninput=ev=>{SET.sens=+ev.target.value;saveSet()};
 const UI={soloMap:0,soloTeam:0,soloWpn:0,soloDiff:1,soloRounds:2};
 function seg(id,cb){const el=$(id);el.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;for(const x of el.children)x.classList.toggle('on',x===b);cb(+b.dataset.v)})}
 function setSeg(id,v){for(const x of $(id).children)x.classList.toggle('on',+x.dataset.v===v)}
-function mapCards(id,cb){
+function mapCards(id,cb,withEvent){
   const el=$(id);el.innerHTML='';
-  MAPS.forEach((m,i)=>{const b=document.createElement('button');b.className='mapc';b.dataset.v=i;const c=document.createElement('canvas');c.width=270;c.height=180;
-    const w=getWorld(i);const img=mapImage(w,1.5);const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);
+  MAPS.forEach((m,i)=>{if(m.event&&!withEvent)return;const b=document.createElement('button');b.className='mapc';b.dataset.v=i;const c=document.createElement('canvas');c.width=270;c.height=180;
+    const x=c.getContext('2d');if(m.event){const gr=x.createLinearGradient(0,0,270,180);gr.addColorStop(0,'#3d5a2c');gr.addColorStop(1,'#6a5a3a');x.fillStyle=gr;x.fillRect(0,0,270,180);x.fillStyle='#4f8296';x.fillRect(128,0,14,180);x.fillStyle='#ffb066';x.font='900 44px "Big Shoulders Stencil Display",Impact,sans-serif';x.textAlign='center';x.fillText('200 vs 200',135,98);x.font='600 15px "Barlow Semi Condensed",sans-serif';x.fillStyle='#e9e0c6';x.fillText('Special Event · 1 × 1 km',135,124)}
+    else{const w=getWorld(i);const img=mapImage(w,1.5);x.drawImage(img,0,0,c.width,c.height)}
     const t=document.createElement('b');t.textContent=m.name;const s=document.createElement('span');s.textContent=m.desc;b.append(c,t,s);
     b.onclick=()=>{for(const o of el.children)o.classList.toggle('on',o===b);cb(i)};el.append(b)});
 }
@@ -2468,6 +2738,14 @@ function selectMapCard(id,i){for(const o of $(id).children)o.classList.toggle('o
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>showScreen(b.dataset.go));
 $('bSolo').onclick=()=>{AU.init();showScreen('s-solo')};
 $('bMulti').onclick=()=>{AU.init();showScreen('s-mp')};
+const EVIDX=MAPS.findIndex(m=>m.event);UI.evTeam=0;UI.evWpn=0;UI.evDiff=1;
+$('bEvent').onclick=()=>{AU.init();showScreen('s-event');drawEventPreview()};
+seg('evTeam',v=>UI.evTeam=v);seg('evWpn',v=>UI.evWpn=v);seg('evDiff',v=>UI.evDiff=v);
+$('bEventStart').onclick=()=>{AU.init();G.mode='sp';G.mapIdx=EVIDX;G.diff=UI.evDiff;G.rtw=1;G.myTeam=UI.evTeam;G.myWpn=UI.evWpn;requestLock();startMatch()};
+let evDrawn=false;
+function drawEventPreview(){if(evDrawn)return;const c=$('evMap'),x=c.getContext('2d');x.fillStyle='#0c0e09';x.fillRect(0,0,c.width,c.height);x.fillStyle='#9da48b';x.font='600 15px "Barlow Semi Condensed",sans-serif';x.textAlign='center';x.fillText('Karte wird geladen …',c.width/2,c.height/2);
+  setTimeout(()=>{const w=getWorld(EVIDX);const img=mapImage(w,.32);x.drawImage(img,0,0,c.width,c.height);const s=c.width/w.W;x.font='600 10px "Barlow Semi Condensed",sans-serif';
+    for(const p of w.posts){const px=(p.x-w.x0)*s,py=(p.z-w.z0)*s;x.fillStyle='#000';x.fillText(p.name,px+1,py-4);x.fillStyle='#fff';x.fillText(p.name,px,py-5);x.fillRect(px-1.5,py-1.5,3,3)}evDrawn=true},40)}
 $('bSettings').onclick=()=>{showScreen('s-set')};
 seg('soloTeam',v=>UI.soloTeam=v);seg('soloWpn',v=>UI.soloWpn=v);seg('soloDiff',v=>UI.soloDiff=v);seg('soloRounds',v=>UI.soloRounds=v);
 $('bSoloStart').onclick=()=>{AU.init();G.mode='sp';G.mapIdx=UI.soloMap;G.diff=UI.soloDiff;G.rtw=UI.soloRounds;G.myTeam=UI.soloTeam;G.myWpn=UI.soloWpn;requestLock();startMatch()};
@@ -2491,7 +2769,7 @@ function renderRoom(){
   const ps=NET.peers();const lists=[$('listA'),$('listB')];lists[0].innerHTML='';lists[1].innerHTML='';
   for(const p of ps){const pr=p.presence;const d=document.createElement('div');d.className='pl';const n=document.createElement('span');n.textContent=cleanName(pr.nm)||'Spieler';
     const i=document.createElement('i');i.textContent=(pr.hs===1?'Host ':'')+(p.isMe&&p.sameTab?'(du)':'');d.append(n,i);lists[pr.tm===1?1:0].append(d)}
-  for(let t=0;t<2;t++){const n=ps.filter(p=>(p.presence.tm===1?1:0)===t).length;const d=document.createElement('div');d.className='pl';const s=document.createElement('i');s.textContent='+ '+(PER_TEAM-n)+' Bots';d.append(s);lists[t].append(d)}
+  for(let t=0;t<2;t++){const n=ps.filter(p=>(p.presence.tm===1?1:0)===t).length;const d=document.createElement('div');d.className='pl';const s=document.createElement('i');s.textContent='+ '+(((MAPS[NET.hostP&&!NET.host?NET.hostP.mp|0:NET.settings.map]||MAPS[0]).perTeam||PER_TEAM)-n)+' Bots';d.append(s);lists[t].append(d)}
   const h=NET.host;$('hostOpts').hidden=!h;$('bRoomStart').hidden=!h;$('guestInfo').hidden=h;
   if(!h){const hp=NET.hostP;$('guestInfo').textContent=hp?('Der Host wählt: '+(MAPS[hp.mp|0]||MAPS[0]).name+' · '+DIFF[hp.df|0].name+' · '+(hp.rw|0||2)+' Runden zum Sieg. Warte auf den Start …'):'Warte auf den Host …'}
   setSeg('roomTeam',NET.team);setSeg('roomWpn',NET.wpn);
@@ -2528,7 +2806,7 @@ function frame(t){
   try{$('inName').value=localStorage.getItem('hitcall_name')||''}catch(e){}
   simBallistics();gfxInit();charsInit();bbRenderInit();vmInit();
   mapCards('soloMaps',i=>{UI.soloMap=i;loadMap(i,false)});selectMapCard('soloMaps',0);
-  mapCards('roomMaps',i=>{NET.settings.map=i;NET.push();loadMap(i,false)});selectMapCard('roomMaps',0);
+  mapCards('roomMaps',i=>{NET.settings.map=i;NET.push();renderRoom();if(!MAPS[i].event)loadMap(i,false)},typeof Peer==='function'&&!window.claude);selectMapCard('roomMaps',0);
   loadMap(0,false);
   const jm=/^#join-([a-z0-9]{3,6})$/.exec(location.hash);if(jm){$('inCode').value=jm[1];showScreen('s-mp');toast('Gib deinen Namen ein und klick auf „Beitreten“.')}
   requestAnimationFrame(frame);
