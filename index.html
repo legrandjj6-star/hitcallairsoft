@@ -231,7 +231,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <div id="touchWarn" class="touchwarn" hidden>Zum Spielen brauchst du Tastatur und Maus. Auf dem Handy siehst du nur das Menü.</div>
     <div class="col">
       <button class="btn pri" id="bSolo">Gegen Bots <small>Einzelspieler</small></button>
-      <button class="btn ev" id="bEvent">Special Event <small>Grossschlacht · 200 gegen 200 · 1 × 1 km</small></button>
+      <button class="btn ev" id="bEvent">Special Event <small>Grossschlacht in der Taiga · 200 gegen 200</small></button>
       <button class="btn" id="bMulti">Multiplayer <small>Mit Freunden online</small></button>
       <button class="btn" id="bSettings">Einstellungen <small>Maus, Grafik, Ton</small></button>
     </div>
@@ -271,8 +271,8 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <button class="back" data-go="s-main">← Zurück</button>
     <div class="tape"></div>
     <div class="tag">Special Event</div>
-    <h2>Grossschlacht</h2>
-    <p class="lead">Eine Karte von <b>1 × 1 km</b> mit Feldlagern, Dörfern, Kirchtürmen, Burgen, Bergen, Höfen, Wäldern und einem Fluss mit vier Brücken. <b>200 gegen 200</b>, jedes Team aufgeteilt in Trupps zu 10–30 Mann mit eigenen Zielen.</p>
+    <h2>Grossschlacht in der Taiga</h2>
+    <p class="lead"><b>1 × 1 km</b> tief in Russland: dichter Fichten-, Kiefern- und Birkenwald, Holzdörfer mit Zwiebelturm-Kirche, ein Kloster auf dem Hügel, Kolchose, Sägewerk, Holzfällerlager, Radarstation, Bahnlinie mit Bahnhof und Güterzügen, Sümpfe, ein See und ein Fluss mit vier Holzbrücken. <b>200 gegen 200</b> in Trupps zu 10–30 Mann, die irgendwo auf der Karte starten.</p>
     <canvas id="evMap" width="320" height="320"></canvas>
     <h3>Dein Team</h3>
     <div class="seg" id="evTeam"><button class="t0 on" data-v="0">Blau</button><button class="t1" data-v="1">Rot</button></div>
@@ -280,7 +280,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <div class="seg" id="evWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button></div>
     <h3>Bot-Stärke</h3>
     <div class="seg" id="evDiff"><button data-v="0">Leicht</button><button class="on" data-v="1">Normal</button><button data-v="2">Schwer</button></div>
-    <p class="note">Du kämpfst im Trupp Alpha. Eine Schlacht dauert bis zu 20 Minuten. Bist du raus, schaust du deinem Trupp zu und kannst die Zeit vorspulen. Im Multiplayer wählt der Host die Grossschlacht als Karte.</p>
+    <p class="note">Du kämpfst im Trupp Alpha, alle Trupps starten an zufälligen Orten im Wald. Eine Schlacht dauert bis zu 20 Minuten. Bist du raus, schaust du deinem Trupp zu und kannst die Zeit vorspulen. Im Multiplayer wählt der Host die Grossschlacht als Karte.</p>
     <button class="btn pri" id="bEventStart">Ins Gefecht <small>400 Kämpfer</small></button>
   </section>
 
@@ -368,7 +368,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const BUILD_VERSION='1794401963814';
+const BUILD_VERSION='1794404511591';
 'use strict';
 // ================= UTIL =================
 const TAU=Math.PI*2;
@@ -393,13 +393,18 @@ function hexRGB(h){return[((h>>16)&255)/255,((h>>8)&255)/255,(h&255)/255]}
 function distSeg2(px,pz,ax,az,bx,bz){const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz;let t=l?((px-ax)*dx+(pz-az)*dz)/l:0;t=clamp(t,0,1);const qx=ax+dx*t-px,qz=az+dz*t-pz;return[qx*qx+qz*qz,t]}
 
 // ================= GEOMETRY BUILDER =================
-class GeoBuilder{
-  constructor(){this.p=[];this.n=[];this.c=[]}
+class GeoBuilder{ // typed arrays: float positions, int8 normals, uint8 colours (vertex count = len)
+  constructor(){this.len=0;this.cap=0;this.p=null;this.n=null;this.c=null;this._grow(1<<16)}
+  _grow(cap){const p=new Float32Array(cap*3),n=new Int8Array(cap*3),c=new Uint8Array(cap*3);if(this.p){p.set(this.p);n.set(this.n);c.set(this.c)}this.p=p;this.n=n;this.c=c;this.cap=cap}
+  get tris(){return this.len/3}
   tri(ax,ay,az,bx,by,bz,cx,cy,cz,r,g,b){
     const ux=bx-ax,uy=by-ay,uz=bz-az,vx=cx-ax,vy=cy-ay,vz=cz-az;
-    let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
-    this.p.push(ax,ay,az,bx,by,bz,cx,cy,cz);
-    for(let i=0;i<3;i++){this.n.push(nx,ny,nz);this.c.push(r,g,b)}
+    let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx=Math.round(nx/l*127);ny=Math.round(ny/l*127);nz=Math.round(nz/l*127);
+    if(this.len+3>this.cap)this._grow(this.cap*2);
+    const P=this.p,N=this.n,C=this.c,i=this.len*3;this.len+=3;
+    P[i]=ax;P[i+1]=ay;P[i+2]=az;P[i+3]=bx;P[i+4]=by;P[i+5]=bz;P[i+6]=cx;P[i+7]=cy;P[i+8]=cz;
+    const R=r>=1?255:r<=0?0:Math.round(r*255),G=g>=1?255:g<=0?0:Math.round(g*255),B=b>=1?255:b<=0?0:Math.round(b*255);
+    for(let k=0;k<9;k+=3){N[i+k]=nx;N[i+k+1]=ny;N[i+k+2]=nz;C[i+k]=R;C[i+k+1]=G;C[i+k+2]=B}
   }
   quad(a,b,c,d,col){this.tri(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2],col[0],col[1],col[2]);this.tri(a[0],a[1],a[2],c[0],c[1],c[2],d[0],d[1],d[2],col[0],col[1],col[2])}
   box(x0,y0,z0,x1,y1,z1,hex,j=1,noBottom=false){
@@ -419,13 +424,27 @@ class GeoBuilder{
     for(const f of F){const a=V[f[0]],b=V[f[1]],d=V[f[2]];const k=j*(.85+rnd()*.25)*(.8+.25*((a[1]+b[1]+d[1])/3-cy+ry)/(2*ry));
       this.tri(a[0],a[1],a[2],b[0],b[1],b[2],d[0],d[1],d[2],c[0]*k,c[1]*k,c[2]*k)}
   }
-  cone(cx,cy,cz,r,h,hex,seg,rnd){ // pyramid-ish cone (pine)
+  cone(cx,cy,cz,r,h,hex,seg,rnd,noBot=false){ // pyramid-ish cone (pine)
     const c=hexRGB(hex);const a0=rnd()*TAU;
     for(let i=0;i<seg;i++){const a=a0+i/seg*TAU,b=a0+(i+1)/seg*TAU;const k=.8+rnd()*.3;
       this.tri(cx+Math.cos(a)*r,cy,cz+Math.sin(a)*r,cx,cy+h,cz,cx+Math.cos(b)*r,cy,cz+Math.sin(b)*r,c[0]*k,c[1]*k,c[2]*k);
-      this.tri(cx+Math.cos(a)*r,cy,cz+Math.sin(a)*r,cx+Math.cos(b)*r,cy,cz+Math.sin(b)*r,cx,cy,cz,c[0]*.5,c[1]*.5,c[2]*.5)}
+      if(!noBot)this.tri(cx+Math.cos(a)*r,cy,cz+Math.sin(a)*r,cx+Math.cos(b)*r,cy,cz+Math.sin(b)*r,cx,cy,cz,c[0]*.68,c[1]*.68,c[2]*.68)}
   }
-  build(){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(this.p,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(this.n,3));g.setAttribute('color',new THREE.Float32BufferAttribute(this.c,3));g.computeBoundingSphere();return g}
+  // vertical prism (n sides) for trunks, silos, domes' drums
+  prism(cx,y0,cz,r,h,hex,seg,j=1,top=true){const c=hexRGB(hex);
+    for(let i=0;i<seg;i++){const a=i/seg*TAU,b=(i+1)/seg*TAU,k=j*(.82+.18*Math.cos(a-.6));const ax=cx+Math.cos(a)*r,az=cz+Math.sin(a)*r,bx=cx+Math.cos(b)*r,bz=cz+Math.sin(b)*r;
+      this.tri(ax,y0,az,ax,y0+h,az,bx,y0+h,bz,c[0]*k,c[1]*k,c[2]*k);this.tri(ax,y0,az,bx,y0+h,bz,bx,y0,bz,c[0]*k,c[1]*k,c[2]*k);
+      if(top)this.tri(ax,y0+h,az,cx,y0+h,cz,bx,y0+h,bz,c[0]*j,c[1]*j,c[2]*j)}}
+  static geo(p,n,c){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('normal',new THREE.BufferAttribute(n,3,true));g.setAttribute('color',new THREE.BufferAttribute(c,3,true));g.computeBoundingSphere();return g}
+  build(){const L=this.len*3;return GeoBuilder.geo(this.p.slice(0,L),this.n.slice(0,L),this.c.slice(0,L))}
+  // split into square tiles (by triangle centroid) so the renderer can frustum-cull most of a huge map
+  buildTiles(ts,x0,z0,W,D){
+    const nx=Math.ceil(W/ts),nz=Math.ceil(D/ts),T=this.len/3,P=this.p,Nn=this.n,C=this.c,cnt=new Int32Array(nx*nz),tid=new Int32Array(T);
+    for(let t=0;t<T;t++){const i=t*9;let gx=Math.floor(((P[i]+P[i+3]+P[i+6])/3-x0)/ts),gz=Math.floor(((P[i+2]+P[i+5]+P[i+8])/3-z0)/ts);gx=gx<0?0:gx>=nx?nx-1:gx;gz=gz<0?0:gz>=nz?nz-1:gz;const k=gz*nx+gx;tid[t]=k;cnt[k]++}
+    const A=[],off=new Int32Array(nx*nz);for(let k=0;k<nx*nz;k++)A.push(cnt[k]?{p:new Float32Array(cnt[k]*9),n:new Int8Array(cnt[k]*9),c:new Uint8Array(cnt[k]*9)}:null);
+    for(let t=0;t<T;t++){const k=tid[t],a=A[k],o=off[k]++*9,i=t*9;for(let j=0;j<9;j++){a.p[o+j]=P[i+j];a.n[o+j]=Nn[i+j];a.c[o+j]=C[i+j]}}
+    return A.filter(Boolean).map(a=>GeoBuilder.geo(a.p,a.n,a.c));
+  }
 }
 
 // ================= WORLD =================
@@ -682,7 +701,7 @@ class Nav{
       if(f<w.water-2.1)return false;
       if(solid(x,f+.3,z)||solid(x,f+.75,z)||solid(x,f+1.2,z)||solid(x,f+1.65,z))return false;
       const o=.3;for(const hy of[.85,1.45])if(solid(x+o,f+hy,z+o)||solid(x-o,f+hy,z+o)||solid(x+o,f+hy,z-o)||solid(x-o,f+hy,z-o))return false;
-      return true};
+      return !w.blocked(x,z,f,1.65,.22)}; // small capsule test too: thin rails and fences fall between the probes
     const mg=Math.max(2,Math.ceil(2/k));
     for(let iz=0;iz<D;iz++)for(let ix=0;ix<W;ix++){
       const ci=iz*W+ix;cs[ci]=F.length;
@@ -1301,19 +1320,24 @@ const MAP_AIRFIELD={
 };
 MAPS.push(MAP_VILLAGE,MAP_DESERT,MAP_AIRFIELD);
 
-// ================= SPECIAL EVENT: GROSSSCHLACHT (1000 x 1000 m, 200 vs 200 in squads) =================
+// ================= SPECIAL EVENT: GROSSSCHLACHT IN DER TAIGA (1000 x 1000 m Russian forest, 200 vs 200 in squads) =================
 const EV_N=Noise(71);
 const EV_R=z=>22*Math.sin(z*.0085)+9*Math.sin(z*.021);          // river centre line (odd -> point symmetric)
+const EV_RAIL=-58;                                                 // railway along the river valley (mirrored at x=+58)
 const EV_TR=[[-215,-100],[-200,-70],[-212,-40],[-196,-10],[-206,20]];
+const EV_SW=[[-120,-235,36],[-430,-410,40],[-115,262,28]];        // swamps (x,z,radius)
+const EV_PL=[-492,-148,-148,-492];                                 // power line corridor
 const EV_PADS=mirrorPads([[-425,20,32,48,null],[-290,-150,42,42,null],[-200,230,30,30,null],[-110,40,42,42,null],[-160,-330,28,28,null],
-  [-360,-300,24,20,null],[-330,130,24,20,null],[-400,-200,24,20,null],[-330,360,9,9,null],[-270,30,6,6,null],[-370,-80,6,6,null]]);
+  [-360,-300,34,24,null],[-330,130,28,22,null],[-400,-200,24,20,null],[-330,360,12,12,null],[-271,31,12,6,null],[-385,-79,12,6,null],[-73,-45,9,24,null],[-224,-146,8,6,null]]);
+// clearings round the pads (x,z,hx,hz,margin): crop fields round villages and the kolkhoz, small yards elsewhere
+const EV_CLR=[[-425,20,32,48,6],[-290,-150,42,42,15],[-200,230,30,30,12],[-110,40,42,42,14],[-160,-330,28,28,6],[-360,-300,34,24,22],[-330,130,28,22,8],
+  [-400,-200,24,20,8],[-330,360,12,12,8],[-271,31,12,6,5],[-385,-79,12,6,5],[-73,-45,9,24,4],[-224,-146,8,6,6]];
+const EV_FIELDS=[1,2,3,5];
 const EV_ROADS=(()=>{const L=[[[-470,20],[-400,20],[-330,-10],[-290,-150],[-200,-140],[-60,-130],[EV_R(-130)-17,-130]],
   [[-330,-10],[-250,60],[-110,40],[-50,120],[EV_R(130)-17,130]],[[-250,60],[-200,230],[-120,330],[EV_R(380)-17,380]],
   [[-290,-150],[-300,-250],[-160,-330],[-60,-390],[EV_R(-380)-17,-380]],[[-330,-10],[-400,-200],[-360,-300]],[[-250,60],[-330,130]]];
   const segs=[];for(const l of L)for(let i=0;i<l.length-1;i++){const a=l[i],b=l[i+1];segs.push([a[0],a[1],b[0],b[1]],[-a[0],-a[1],-b[0],-b[1]])}return segs})();
 function evRoadD(x,z){let m=1e9;for(const s of EV_ROADS){if(x<Math.min(s[0],s[2])-8||x>Math.max(s[0],s[2])+8||z<Math.min(s[1],s[3])-8||z>Math.max(s[1],s[3])+8)continue;const d=distSeg2(x,z,s[0],s[1],s[2],s[3])[0];if(d<m)m=d}return Math.sqrt(m)}
-const evForest=(x,z)=>EV_N(x*.007+50,z*.007-30)+EV_N(-x*.007+50,-z*.007-30);
-const evFarm=(x,z)=>EV_N(x*.004-20,z*.004+70)+EV_N(-x*.004-20,-z*.004+70);
 function evTrench(x,z){
   let best=1e9,bs=0,acc=0,tot=0;for(let i=0;i<EV_TR.length-1;i++)tot+=Math.hypot(EV_TR[i+1][0]-EV_TR[i][0],EV_TR[i+1][1]-EV_TR[i][1]);
   if(x<-225||x>-185||z<-110||z>30)return 0;
@@ -1328,54 +1352,147 @@ function evRaw(x,z,N){
   const l1=Math.hypot(x+215,z+215),l2=Math.hypot(x-215,z-215);h-=10*(1-sstep(24,56,l1))+10*(1-sstep(24,56,l2));
   return h;
 }
+// railway grade: terrain along the line smoothed twice, so the embankment / cutting runs evenly
+function evBase(x,z,N){const h=evRaw(x,z,N),d=Math.abs(x-EV_R(z));return lerp(h,4.5,1-sstep(18,60,d))}
+let EV_RH=null;
+function evRailInit(N){const raw=new Float32Array(501);EV_RH=new Float32Array(501);
+  for(let i=0;i<=500;i++){const z=-500+i*2;let s=0;for(let k=-5;k<=5;k++)s+=evBase(EV_RAIL,z+k*8,N);raw[i]=Math.max(s/11,4)}
+  for(let i=0;i<=500;i++){let s=0,c=0;for(let k=-12;k<=12;k++){const j=i+k;if(j<0||j>500)continue;s+=raw[j];c++}EV_RH[i]=s/c}}
+function evRailH(z){const f=clamp((z+500)/2,0,499.999),i=f|0,t=f-i;return EV_RH[i]+(EV_RH[i+1]-EV_RH[i])*t}
+function evSwamp(x,z){let m=0;for(const s of EV_SW)for(const sg of[1,-1]){const d=Math.hypot(x-s[0]*sg,z-s[1]*sg)/s[2];if(d<1.1)m=Math.max(m,1-sstep(.55,1.05,d))}return m}
+function evPadD(c,x,z){const dx=Math.max(0,Math.abs(x-c[0])-c[2]),dz=Math.max(0,Math.abs(z-c[1])-c[3]);return Math.hypot(dx,dz)}
+// openness: 0 = deep taiga, 1 = clearing. Evaluated on the west half; the east half is its point mirror.
+function evOpen(x,z){if(x>0){x=-x;z=-z}let o=0;
+  for(const c of EV_CLR){const d=evPadD(c,x,z);if(d>c[4]*1.3+6)continue;const j=c[4]*(1+.22*EV_N(x*.045+c[0]*.01,z*.045));o=Math.max(o,1-sstep(j-4,j+4,d));if(o>=1)return 1}
+  const rd=evRoadD(x,z);if(rd<7)o=Math.max(o,1-sstep(3.4,5.8,rd));
+  const dr=Math.abs(x-EV_R(z));if(dr<26)o=Math.max(o,1-sstep(17,25,dr));
+  const dl=Math.abs(x-EV_RAIL);if(dl<9)o=Math.max(o,1-sstep(5.2,7.8,dl));
+  const pl=Math.sqrt(distSeg2(x,z,EV_PL[0],EV_PL[1],EV_PL[2],EV_PL[3])[0]);if(pl<10)o=Math.max(o,1-sstep(6,8.6,pl));
+  const lk=Math.hypot(x+215,z+215);if(lk<62)o=Math.max(o,1-sstep(48,60,lk));
+  const sw=evSwamp(x,z);if(sw>0)o=Math.max(o,sw*.7);
+  const q=EV_N(x*.011+3,z*.011+9)+.5*EV_N(x*.03-5,z*.03+2);if(q>.74)o=Math.max(o,sstep(.74,.86,q));
+  return o}
+function evField(x,z){if(x>0){x=-x;z=-z}for(const i of EV_FIELDS){const c=EV_CLR[i],d=evPadD(c,x,z);if(d>3&&d<c[4]-2)return true}return false}
+function evSpawnOK(x,z){if(Math.abs(x)>465||Math.abs(z)>465)return false;if(x>0){x=-x;z=-z}
+  for(const c of EV_CLR)if(evPadD(c,x,z)<6)return false;
+  return Math.abs(x-EV_R(z))>26&&Math.hypot(x+215,z+215)>52&&evSwamp(x,z)<.15&&Math.abs(x-EV_RAIL)>6}
+
+// ---------- taiga trees (mirror aware, collision trunk + visual crown + sight volume) ----------
+World.prototype.mxz=function(x,z){return this.mirror?[-x,-z]:[x,z]};
+World.prototype.trunk=function(x,z,g,h,tw,col,seg){this._box(x-tw/2,g-.3,z-tw/2,x+tw/2,g+h,z+tw/2,null,3);this.boxes[this.boxes.length-1].tr=1;
+  const[mx,mz]=this.mxz(x,z);this.vis.prism(mx,g-.3,mz,tw*.62,h+.3,col,seg,.92+this.rnd()*.12,false)};
+World.prototype.spruce=function(x,z,h,C){const g=this.T(x,z),R=this.rnd;this.trunk(x,z,g,h*.5,.3+h*.018,C.bark,4);
+  const[mx,mz]=this.mxz(x,z),r=1.4+h*.12,c=C.sp[(R()*C.sp.length)|0];
+  const b=Math.max(2.3,h*.14);this.vis.cone(mx,g+b,mz,r,h*.44,c,6,R);this.vis.cone(mx,g+h*.38,mz,r*.72,h*.38,c,6,R,true);this.vis.cone(mx,g+h*.6,mz,r*.44,h*.4,c,5,R,true);
+  const rh=r*.7,sm=(h-b+.3)/2;this.sight(x,g+b-.3+sm,z,rh,rh/sm)};
+World.prototype.pine=function(x,z,h,C){const g=this.T(x,z),R=this.rnd;this.trunk(x,z,g,h*.78,.28+h*.016,C.pbark,5);
+  const[mx,mz]=this.mxz(x,z),r=1.7+h*.09;
+  this.vis.blob(mx+(R()-.5)*.8,g+h*.84,mz+(R()-.5)*.8,r,r*.5,r*(.8+R()*.3),C.pn[(R()*C.pn.length)|0],R);
+  if(R()<.55)this.vis.blob(mx+(R()-.5)*2.2,g+h*.72,mz+(R()-.5)*2.2,r*.62,r*.36,r*.62,C.pn[(R()*C.pn.length)|0],R);
+  this.sight(x,g+h*.8,z,r,1.7)};
+World.prototype.birch=function(x,z,h,C,autumn){const g=this.T(x,z),R=this.rnd;this.trunk(x,z,g,h*.72,.2+h*.012,C.bb,5);
+  const[mx,mz]=this.mxz(x,z),r=1.4+h*.1,P=autumn?C.ba:C.bl;
+  this.vis.blob(mx,g+h*.74,mz,r,r*1.1,r,P[(R()*P.length)|0],R);this.vis.blob(mx+(R()-.5)*1.6,g+h*.56,mz+(R()-.5)*1.6,r*.72,r*.7,r*.72,P[(R()*P.length)|0],R);
+  this.sight(x,g+h*.68,z,r,.95)};
+World.prototype.sapling=function(x,z,h,C){const g=this.T(x,z),R=this.rnd;const[mx,mz]=this.mxz(x,z),r=.5+h*.28,c=C.sp[(R()*C.sp.length)|0];
+  this.vis.cone(mx,g-.1,mz,r,h*.62,c,5,R);this.vis.cone(mx,g+h*.4,mz,r*.62,h*.6,c,5,R,true);this.sight(x,g+h*.42,z,r*.8,r*.8/(h*.45))};
+World.prototype.snag=function(x,z,h,C){const g=this.T(x,z),R=this.rnd;this.trunk(x,z,g,h,.28+h*.025,C.dead,4);const[mx,mz]=this.mxz(x,z);
+  const y=g+h*(.5+R()*.2);this.vis.box(mx-1.3,y,mz-.07,mx,y+.14,mz+.07,C.dead);const y2=g+h*(.65+R()*.2);this.vis.box(mx-.07,y2,mz,mx+.07,y2+.12,mz+1.1,C.dead)};
+World.prototype.fallen=function(x,z,L,ax,C){const hx=ax?L/2:.55,hz=ax?.55:L/2;const gr=this.groundRange(x,z,hx*2,hz*2);if(gr[1]-gr[0]>.8)return;
+  const g=gr[0];this._box(x-hx,g-.25,z-hz,x+hx,g+1.0,z+hz,C.log,3);const e=this.rnd()<.5?-1:1;
+  if(ax)this._box(x+e*hx-.35,g-.3,z-1.6,x+e*hx+.35,g+2.5,z+1.6,C.root,3);else this._box(x-1.6,g-.3,z+e*hz-.35,x+1.6,g+2.5,z+e*hz+.35,C.root,3)};
+
 const MAP_EVENT={
-  id:'event',name:'Grossschlacht',event:true,perTeam:200,squads:true,
-  desc:'1 × 1 km · 200 gegen 200 in Trupps zu 10–30 Mann',
-  size:[1000,1000],seed:71,water:2.2,hres:2,meshStep:2,navCell:2,roundTime:1200,
-  sky:[0x8db4d8,0xe6e2d2],fog:[0xc6cec8,150,600],sun:[0.45,0.75,0.35,0xfff2dc,1.0],hemi:[0xe2ecf2,0x5a6a40,0.62],
+  id:'event',name:'Taiga',event:true,perTeam:200,squads:true,randomSpawn:true,spawnOK:evSpawnOK,
+  desc:'1 × 1 km russische Taiga · 200 gegen 200 in Trupps zu 10–30 Mann',
+  size:[1000,1000],seed:71,water:2.2,hres:2,meshStep:2,navCell:2,roundTime:1200,tile:100,far:345,
+  sky:[0x8e9aa2,0xc9cbc4],fog:[0xaab1ac,35,330],sun:[0.4,0.62,0.5,0xf2e6cf,0.8],hemi:[0xd6dde0,0x4b5236,0.78],
   terrain(x,z,N){
+    if(!EV_RH){evRailInit(N);for(const p of EV_PADS)if(p[4]==null){const ax=Math.abs(p[0]);
+      if(ax===73)p[4]=evRailH(p[0]<0?p[1]:-p[1])+.15;
+      else if(ax===160||ax===330&&Math.abs(p[1])===360)p[4]=[[p[2],0],[-p[2],0],[0,p[3]],[0,-p[3]]].reduce((a,[dx,dz])=>a+evRaw(p[0]+dx,p[1]+dz,N),0)/4; // hilltop plateaus cut in flush with their sides
+      else p[4]=Math.max(evRaw(p[0],p[1],N),3.6)}}
     let h=evRaw(x,z,N);
-    for(const p of EV_PADS)if(p[4]==null)p[4]=Math.max(evRaw(p[0],p[1],N),3.6);
     h=applyPads(h,x,z,EV_PADS);
     h-=evTrench(x,z)+evTrench(-x,-z);
     const d=Math.abs(x-EV_R(z));h=lerp(h,4.5,1-sstep(18,60,d));h=lerp(h,.6,1-sstep(7,13,d));
+    const sw=evSwamp(x,z);if(sw>0){const hum=.55*(EV_N(x*.13+7,z*.13-3)+EV_N(-x*.13+7,-z*.13-3));h=lerp(h,1.75+Math.max(0,hum),sw)}
+    for(const sg of[1,-1]){const dl=Math.abs(x-EV_RAIL*sg);if(dl<9&&Math.abs(z)<486)h=lerp(evRailH(z*sg),h,sstep(3.4,9,dl))}
     h+=14*sstep(482,498,Math.abs(x))+14*sstep(482,498,Math.abs(z));
     return h;
   },
   ground(x,z,h,s,n){
-    if(h<2.7)return n>0?0x8a7d62:0x7f735a;
-    if(s>.85)return n>0?0x837d70:0x766f62;
-    if(h>44)return n>-.2?0xe4e8e6:0xc9cfcc;
-    if(h>32)return n>.2?0x8d8a76:0x7a8a58;
-    if(evRoadD(x,z)<2.6)return n>.2?0x95836a:0x8c7a60;
-    const f=evForest(x,z);if(f>.45)return n>.2?0x3e5a2c:0x46622f;
-    if(evFarm(x,z)>.25){const k=((Math.floor(x/38)*7349)^(Math.floor(z/31)*9151))&3;return[0xc0ae5e,0x7f9c46,0x8c7652,0xa9b464][k]}
-    return n>.4?0x6f8f45:n<-.35?0x7f8a4a:n<-.05?0x5f8240:0x678a42;
+    if(h<2.5)return n>0?0x4f4c38:0x575440;
+    if(s>.85)return n>0?0x6f6c62:0x7a766a;
+    if(h>42.5)return n>-.2?0xe6eaea:0xcfd6d6;
+    if(Math.abs(z)<482&&(Math.abs(x-EV_RAIL)<2.6||Math.abs(x+EV_RAIL)<2.6))return n>0?0x6b655c:0x625c53;
+    if(evRoadD(x,z)<2.6)return n>.2?0x6e5c45:0x76624a;
+    if(evSwamp(x,z)>.35)return n>.2?0x5f6440:n<-.3?0x6a6a42:0x58603a;
+    if(h>34)return n>.1?0x7a7864:0x6c7254;
+    if(evOpen(x,z)>.55){if(evField(x,z)){const k=((Math.floor(x/26)*7349)^(Math.floor(z/21)*9151))&3;return[0xa8985a,0x7f8c48,0x66563e,0x8f985a][k]}
+      return n>.4?0x6e7c42:n<-.3?0x7a7e48:0x64783e}
+    return n>.35?0x4a5a30:n<-.3?0x4a4630:n<0?0x3f4c2b:0x445230;
   },
   spawn:[-476,-440,-462,440],
-  posts:[[-425,null,20,-1,1,'Lager West','Lager Ost'],[-290,null,-150,-1,0,'Westdorf','Ostdorf'],[-200,null,230,-1,0,'Lindenhof','Birkenhof'],[-110,null,40,-1,0,'Mühlbach','Steinbach'],
-    [-160,null,-330,-1,1,'Burg Falkenstein','Burg Rabenstein'],[-330,null,360,-1,1,'Gipfel West','Gipfel Ost'],[-360,null,-300,-1,0,'Hof Sonnleiten','Hof Schattleiten'],[-330,null,130,-1,0,'Hof Kreuzweg','Hof Grenzweg'],
-    [-400,null,-200,-1,0,'Hof Erlen','Hof Eschen'],[-205,null,-40,-1,1,'Graben West','Graben Ost'],[-262,null,30,-1,0,'Windmühle West','Windmühle Ost'],[-215,null,-150,-1,0,'Seeufer West','Seeufer Ost'],
+  posts:[[-425,null,20,-1,1,'Militärlager Sokol','Militärlager Berkut'],[-290,null,-150,-1,0,'Beresowka','Sosnowka'],[-200,null,230,-1,0,'Gorki','Ljubino'],[-110,null,48,-1,0,'Krasnoje','Iwanowka'],
+    [-160,null,-330,-1,1,'Kloster Swjatogorsk','Kloster Uspenski'],[-328,null,357,-1,1,'Radarstation Gora','Radarstation Kamen'],[-360,null,-300,-1,0,'Kolchose Rasswet','Kolchose Pobeda'],[-330,null,130,-1,0,'Sägewerk Lesnoj','Sägewerk Kedrowy'],
+    [-400,null,-200,-1,0,'Holzfällerlager Bor','Holzfällerlager Jel'],[-205,null,-40,-1,1,'Stellung Wolk','Stellung Medwed'],[-266,null,35,-1,0,'Feuerturm Lissa','Feuerturm Sowa'],[-218,null,-152,-1,0,'Tschornoje-See','Beloje-See'],
+    [-73,null,-45,-1,0,'Bahnhof Krasnoje','Bahnhof Iwanowka'],
     [EV_R(-380),6,-380,0,0,'Brücke Süd'],[EV_R(-130),6,-130,0,0,'Brücke Mitte-Süd'],[EV_R(130),6,130,0,0,'Brücke Mitte-Nord'],[EV_R(380),6,380,0,0,'Brücke Nord'],
-    [EV_R(260)-32,null,260,0,0,'Flussaue Nord'],[-(EV_R(260)-32),null,-260,0,0,'Flussaue Süd']],
+    [EV_R(260)-32,null,260,0,0,'Flussufer Nord'],[-(EV_R(260)-32),null,-260,0,0,'Flussufer Süd']],
   build(w){
-    const RF=0x6a3a2c,WH=0xdcd4c2,STN=0x8f897c,RD=0x8a3e2e,WD=0x6b5236,SB=0xb6a479,CO=0x9a968c,CON=[0xb5462e,0x2f5d8a,0x467a3f,0x8c8c86,0xc28a2b];
-    const TC={trunk:0x4e3a28,pine:0x2b482c,pine2:0x35573a,leaf:0x4f7030,leaf2:0x5f8034};
+    const WH=0xe2ddd0,WD=0x6b5236,SB=0xb6a479,OLV=0x6b7350,CON=[0xb5462e,0x2f5d8a,0x4f6a3f,0x8c8c86,0xc28a2b];
+    const LOG=[0x6b4a2e,0x7a5534,0x5c4229,0x80603e,0x705238],ROOFS=[0x5d6266,0x4d6b55,0x7a3f2c,0x6b5a46,0x3f5f7a,0x5a6e5a],NAL=[0xe8e6dc,0x3f6fb0,0x4f8a5a,0xe8e6dc,0x5b8fd0];
+    const TC={bark:0x4a3a2a,pbark:0x7a4e30,bb:0xd8d5c8,dead:0x8a8478,log:0x6a5038,root:0x4a3a2a,sp:[0x22382a,0x274030,0x1f3527,0x2b4530],pn:[0x34522c,0x3b5a30,0x2f4a28],bl:[0x6f8f3a,0x7d9a40,0x67863a],ba:[0xc9a83a,0xb8962f,0xd2b44a]};
+    const LOGC=Object.assign({},COVER_COLS,{log:0x6a5038,log2:0x7a5c40});
     const padH=(x,z)=>{for(const p of EV_PADS)if(Math.abs(p[0]-x)<.01&&Math.abs(p[1]-z)<.01)return p[4];return w.T(x,z)};
-    // ---- bridges over the river (outside sym: z list is already symmetric) ----
+    // ---- wooden bridges over the river (outside sym: z list is already symmetric) ----
     for(const z of[-380,-130,130,380]){const xc=EV_R(z),xa=xc-17,xb=xc+17;const top=Math.max(w.terrainH(xa,z),w.terrainH(xb,z))+.05;
-      w._box(xa,top-.55,z-3.2,xb,top,z+3.2,0x8a8478);w.railing(xa+2,z-3.1,xb-2,z-3.1,top,0x5d6268);w.railing(xa+2,z+3.1,xb-2,z+3.1,top,0x5d6268);
-      for(const px of[xc-7,xc,xc+7])w.box(px,-1,z,1.2,top-.45,1.6,0x7d786c)}
+      w._box(xa,top-.5,z-3.2,xb,top,z+3.2,0x6e5a40);w.railing(xa+2,z-3.1,xb-2,z-3.1,top,0x5a4632);w.railing(xa+2,z+3.1,xb-2,z+3.1,top,0x5a4632);
+      for(const px of[xc-7,xc,xc+7])for(const pz of[z-2.4,z+2.4])w.box(px,-1,pz,.6,top+.5,.6,0x4e3e2c)}
     w.sym(w=>{
-      const house=(x0,z0,x1,z1,g,col,doors,fl=2)=>{const r=w.building(x0,z0,x1,z1,g,fl,3.2,{col,floor:0x5a4a3a,stair:0x5a4a3a,ground:true,doors});w.roof(x0,z0,x1,z1,r+1,2.6,RF)};
-      const village=(cx,cz,n,seed,church)=>{const r=mulberry32(seed),g=padH(cx,cz);const slots=[];for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){if(!i&&!j)continue;if(n<=8&&(Math.abs(i)>1||Math.abs(j)>1))continue;slots.push([i,j])}
-        for(let i=slots.length-1;i>0;i--){const j=(r()*(i+1))|0;[slots[i],slots[j]]=[slots[j],slots[i]]}
-        const SZ=[[9,9],[10,8],[8,11],[11,9]];const cols=[0xd9cfb8,0xcfc3a6,0xd4c8b0,0xc9bca0,0xe0d6c0];
-        for(let k=0;k<Math.min(n,slots.length);k++){const[i,j]=slots[k];const x=cx+i*17+(r()-.5)*3,z=cz+j*17+(r()-.5)*3;const s=SZ[(r()*4)|0];
-          house(x-s[0]/2,z-s[1]/2,x+s[0]/2,z+s[1]/2,g,cols[k%5],r()<.5?{z0:[[2,4]],x0:[[3,5]]}:{z1:[[2,4]],x0:[[3,5]]})}
-        if(church){w.building(cx-3,cz-4.6,cx+3,cz+4.6,g,4,3.4,{col:WH,floor:0x6a5a48,stair:0x5a4a3a,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]],z1:[[1.5,3.5]]}});
-          for(const[px,pz]of[[-3,-4.6],[3,-4.6],[-3,4.6],[3,4.6]])w._box(cx+px-.3,g+14.65,cz+pz-.3,cx+px+.3,g+16.6,cz+pz+.3,STN);w.roof(cx-3.2,cz-4.8,cx+3.2,cz+4.8,g+16.6,3.2,RF)}
-        else{w.box(cx,g-.2,cz,3.4,.95,3.4,STN);w.box(cx,g,cz,.7,2.1,.7,STN)}};
+      const mxz=(x,z)=>w.mirror?[-x,-z]:[x,z];
+      const beam=(a,b,wd,col)=>{let[ax,ay,az]=a,[bx,by,bz]=b;if(w.mirror){ax=-ax;az=-az;bx=-bx;bz=-bz}
+        let dx=bx-ax,dy=by-ay,dz=bz-az;const l=Math.hypot(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
+        let ux,uy,uz;if(Math.abs(dy)<.9){ux=-dz;uy=0;uz=dx}else{ux=0;uy=dz;uz=-dy}const ul=Math.hypot(ux,uy,uz)||1;ux/=ul;uy/=ul;uz/=ul;
+        const vx=dy*uz-dz*uy,vy=dz*ux-dx*uz,vz=dx*uy-dy*ux,h=wd/2,c=hexRGB(col),V=w.vis;
+        V.quad([ax-ux*h,ay-uy*h,az-uz*h],[bx-ux*h,by-uy*h,bz-uz*h],[bx+ux*h,by+uy*h,bz+uz*h],[ax+ux*h,ay+uy*h,az+uz*h],c);
+        V.quad([ax-vx*h,ay-vy*h,az-vz*h],[bx-vx*h,by-vy*h,bz-vz*h],[bx+vx*h,by+vy*h,bz+vz*h],[ax+vx*h,ay+vy*h,az+vz*h],c)};
+      // onion dome on a drum, with spire and cross
+      const dome=(x,z,y,r,col)=>{const[mx,mz]=mxz(x,z),V=w.vis;V.prism(mx,y,mz,r*.78,r*1.1,WH,8,1,false);V.blob(mx,y+r*1.1+r*.8,mz,r,r*1.05,r,col,w.rnd);
+        V.cone(mx,y+r*1.1+r*1.5,mz,r*.4,r*1.05,col,6,w.rnd,true);V.box(mx-.05,y+r*2.5,mz-.05,mx+.05,y+r*2.5+.95,mz+.05,0xd8b04a);V.box(mx-.32,y+r*2.5+.55,mz-.05,mx+.32,y+r*2.5+.63,mz+.05,0xd8b04a)};
+      // carved window frames (nalichniki) round every window hole the building() helper cut
+      const nal=(x0,z0,x1,z1,y,fh,floors,doors,col)=>{const t=.35,c=hexRGB(col);
+        for(const[ax,s0,len,base,out,dl]of[[true,x0,x1-x0,z0,-1,doors.z0],[true,x0,x1-x0,z1,1,doors.z1],[false,z0+t/2,z1-z0-t,x0,-1,doors.x0],[false,z0+t/2,z1-z0-t,x1,1,doors.x1]]){
+          const n=Math.floor((len-2)/4);
+          for(let k=0;k<floors;k++){const fy=y+k*fh,ds=k===0?(dl||[]):[];
+            for(let i=0;i<n;i++){const cc=2+(i+.5)*(len-4)/n;if(ds.some(hh=>cc+1>hh[0]-.4&&cc-1<hh[1]+.4))continue;
+              const a=s0+cc,pl=base+out*(t/2+.03);
+              const P=(u,v)=>{let px=ax?a+u:pl,pz=ax?pl:a+u;if(w.mirror){px=-px;pz=-pz}return[px,fy+v,pz]};
+              const Q=(u0,u1,v0,v1)=>w.vis.quad(P(u0,v0),P(u1,v0),P(u1,v1),P(u0,v1),c);
+              Q(-.95,.95,2.15,2.38);Q(-.9,.9,.86,1.05);Q(-.95,-.75,1.05,2.15);Q(.75,.95,1.05,2.15);
+              const A=P(-.95,2.38),B=P(.95,2.38),T=P(0,2.8);w.vis.tri(A[0],A[1],A[2],B[0],B[1],B[2],T[0],T[1],T[2],c[0],c[1],c[2])}}}};
+      // log house (izba): log walls, tin or plank roof, painted window frames, woodpile on the gable without a door
+      const isba=(x,z,sw,sd,g,R,floors)=>{const x0=x-sw/2,x1=x+sw/2,z0=z-sd/2,z1=z+sd/2,col=LOG[(R()*LOG.length)|0];
+        const west=R()<.5,doors=west?{z0:[[2,4]],x0:[[3,5]]}:{z1:[[2,4]],x1:[[3,5]]};
+        const r=w.building(x0,z0,x1,z1,g,floors,3.0,{col,floor:0x5a4630,stair:0x5a4630,ground:true,doors});
+        w.roof(x0,z0,x1,z1,r+1,2.7,ROOFS[(R()*ROOFS.length)|0]);nal(x0,z0,x1,z1,g,3.0,floors,doors,NAL[(R()*NAL.length)|0]);
+        if(R()<.7){const s=west?1:-1;w.gbox(x+s*(sw/2+.9),z,.9,1.3,Math.min(sd-2,3.4),0x7a5a38)}};
+      const church=(cx,cz,g,dc)=>{
+        const hr=w.building(cx-5,cz-8,cx+5,cz+3,g,1,5.2,{col:WH,floor:0x6a5a48,ground:true,doors:{z1:[[3.5,6.5]],x0:[[4.5,6.5]],x1:[[4.5,6.5]]}});
+        w.roof(cx-5,cz-8,cx+5,cz+3,hr+1,2.8,0x3f5f4a);dome(cx,cz-2.5,hr+2.6,2.1,dc);
+        for(const[px,pz]of[[-3.2,-6.4],[3.2,-6.4],[-3.2,1.4],[3.2,1.4]])dome(cx+px,cz+pz,hr+1.4,1,dc);
+        w.building(cx-3,cz+4,cx+3,cz+13.2,g,4,3.4,{col:WH,floor:0x6a5a48,stair:0x5a4a3a,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]],x0:[[3,5]]}});
+        for(const[px,pz]of[[-3,4],[3,4],[-3,13.2],[3,13.2]])w._box(cx+px-.3,g+14.65,cz+pz-.3,cx+px+.3,g+16.6,cz+pz+.3,WH);
+        w.roof(cx-3.2,cz+3.8,cx+3.2,cz+13.4,g+16.6,2.4,0x3f5f4a);dome(cx,cz+8.6,g+18.3,1.2,dc)};
+      const village=(cx,cz,n,seed,center)=>{const R=mulberry32(seed),g=padH(cx,cz);const slots=[];
+        for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){if(!i&&!j)continue;if(center==='church'&&i===0&&j===1)continue;if(n<=8&&(Math.abs(i)>1||Math.abs(j)>1))continue;slots.push([i,j])}
+        for(let i=slots.length-1;i>0;i--){const j=(R()*(i+1))|0;[slots[i],slots[j]]=[slots[j],slots[i]]}
+        const SZ=[[9,8],[10,8],[8,10],[11,9],[9,9]];
+        for(let k=0;k<Math.min(n,slots.length);k++){const[i,j]=slots[k];const x=cx+i*17+(R()-.5)*3,z=cz+j*17+(R()-.5)*3,s=SZ[(R()*SZ.length)|0];isba(x,z,s[0],s[1],g,R,R()<.3?2:1)}
+        if(center==='church')church(cx,cz,g,0x3f8a5a);
+        else if(center==='statue'){w.box(cx,g-.2,cz,2.6,2.4,2.6,0x9a968c);w.box(cx,g+2.2,cz,1,1.2,.7,0x6e7a6e);w.box(cx,g+3.4,cz,.9,1,.6,0x6e7a6e);w.box(cx,g+4.4,cz,.5,.5,.5,0x6e7a6e);w._box(cx+.45,g+3.9,cz-.15,cx+1.3,g+4.1,cz+.15,0x6e7a6e,0)}
+        else{w.box(cx,g-.2,cz,1.8,1.1,1.8,WD);for(const s of[-1,1])w._box(cx+s*.8-.08,g+.9,cz-.08,cx+s*.8+.08,g+2.4,cz+.08,WD,0);w.roof(cx-1.1,cz-1,cx+1.1,cz+1,g+2.3,.8,0x5d6266)}};
       const stand=(x,z)=>{const g=w.T(x,z);for(const[px,pz]of[[-1,-1],[1,-1],[-1,1],[1,1]])w._box(x+px-.12,g-.4,z+pz-.12,x+px+.12,g+4.2,z+pz+.12,WD);
         w._box(x-1.15,g+3.95,z-1.15,x+1.15,g+4.2,z+1.15,WD);w._box(x-1.2,g+6.2,z-1.2,x+1.2,g+6.4,z+1.2,0x5e4329);
         w.wall(x+1.1,z-1.1,x+1.1,z+1.1,g+4.2,.9,.12,WD);w.wall(x-1.1,z+1.1,x+1.1,z+1.1,g+4.2,.9,.12,WD);w.wall(x-1.1,z-1.1,x+1.1,z-1.1,g+4.2,.9,.12,WD);
@@ -1383,63 +1500,139 @@ const MAP_EVENT={
       const tower=(x,z,g)=>{for(const[px,pz]of[[-1.4,-1.4],[1.4,-1.4],[-1.4,1.4],[1.4,1.4]])w._box(x+px-.2,g-.3,z+pz-.2,x+px+.2,g+6,z+pz+.2,WD);
         w._box(x-1.7,g+5.7,z-1.7,x+1.7,g+6,z+1.7,WD);w.wall(x-1.7,z-1.7,x+1.7,z-1.7,g+6,1.1,.2,WD);w.wall(x-1.7,z+1.7,x+1.7,z+1.7,g+6,1.1,.2,WD);w.wall(x+1.7,z-1.6,x+1.7,z+1.6,g+6,1.1,.2,WD);
         w._box(x-1.9,g+8.6,z-1.9,x+1.9,g+8.85,z+1.9,0x5e4329);w.ramp(x-12.6,z-.6,x-1.7,z+.6,'x',g,g+6,0x5e4329,{steps:true,bottom:g-.3})};
-      const farm=(cx,cz,seed)=>{const g=padH(cx,cz),r=mulberry32(seed);
-        const rb=w.building(cx-14,cz-7,cx-2,cz+7,g,2,3.5,{col:RD,floor:WD,stair:WD,ground:true,doors:{z0:[[4,8]],x0:[[5,9]]}});w.roof(cx-14,cz-7,cx-2,cz+7,rb+1,3.6,0x5b5b55);
-        house(cx+4,cz-4.5,cx+13,cz+4.5,g,0xd8ccb2,{z0:[[2,4]],x0:[[3,5]]});
-        for(let i=0;i<6;i++)w.gbox(cx-8+i*1.9,cz+12+r()*2,1.6,1.3,1.3,0xc9b26a);
-        // hedgerow rectangle (gaps every 9 m)
-        for(let t=-40;t<=40;t+=4.5)if(((t+40)/4.5|0)%3){w.bush(cx+t,cz-30,1.4,0x3f5e2a);w.bush(cx+t,cz+34,1.4,0x4f6d30)}
-        for(let t=-30;t<=34;t+=4.5)if(((t+30)/4.5|0)%3)w.bush(cx-44,cz+t,1.4,0x3f5e2a)};
+      // fire lookout tower: 9.5 m platform with a roofed cabin, one long flight of steps
+      const ftower=(x,z,g)=>{const H=9.5;for(const[px,pz]of[[-1.6,-1.6],[1.6,-1.6],[-1.6,1.6],[1.6,1.6]])w._box(x+px-.2,g-.3,z+pz-.2,x+px+.2,g+H+2.6,z+pz+.2,WD);
+        w._box(x-1.9,g+H-.3,z-1.9,x+1.9,g+H,z+1.9,WD);
+        w.wall(x-1.9,z-1.9,x+1.9,z-1.9,g+H,1.1,.15,WD);w.wall(x-1.9,z+1.9,x+1.9,z+1.9,g+H,1.1,.15,WD);w.wall(x+1.9,z-1.8,x+1.9,z+1.8,g+H,1.1,.15,WD);
+        w._box(x-2.3,g+H+2.6,z-2.3,x+2.3,g+H+2.85,z+2.3,0x5e4329);w.roof(x-2.3,z-2.3,x+2.3,z+2.3,g+H+2.85,1.2,0x7a3f2c);
+        for(const y of[3,6.5])for(const[a0,b0,a1,b1]of[[-1,-1,1,-1],[1,-1,1,1],[1,1,-1,1]])beam([x+a0*1.6,g+y,z+b0*1.6],[x+a1*1.6,g+y+2.5,z+b1*1.6],.12,WD);
+        w.ramp(x-17.8,z-.6,x-1.9,z+.6,'x',g-.15,g+H,0x5e4329,{steps:true,bottom:g-.4})};
       const tank=(cx,cz,g,h,col)=>{w._box(cx-3,g-.2,cz-2,cx+3,g+h,cz+2,col);w._box(cx-2,g-.2,cz-3,cx+2,g+h,cz+3,col)};
-      // ---- forward base ----
+      const silo=(x,z,g)=>{const[mx,mz]=mxz(x,z);w.vis.prism(mx,g-.3,mz,2.3,12.3,0xb0aca0,10,1,false);w.vis.cone(mx,g+12,mz,2.4,1.6,0x8a8c88,10,w.rnd);w._box(x-2.1,g-.3,z-1.4,x+2.1,g+12,z+1.4,null,3);w._box(x-1.4,g-.3,z-2.1,x+1.4,g+12,z+2.1,null,3)};
+      const wtower=(x,z,g)=>{const[mx,mz]=mxz(x,z);w.vis.prism(mx,g-.3,mz,1.15,12.3,0x8a4636,8,1,false);w._box(x-1,g-.3,z-1,x+1,g+12,z+1,null,3);
+        w.vis.prism(mx,g+12,mz,2.8,3.6,0x6d7276,10,1,false);w.vis.cone(mx,g+12,mz,2.8,-.9,0x5d6266,10,w.rnd);w.vis.cone(mx,g+15.6,mz,3,1.4,0x5d6266,10,w.rnd);w._box(x-2.4,g+12,z-2.4,x+2.4,g+15.6,z+2.4,null,3)};
+      const BX=(x,z,ax)=>(a0,a1,b0,b1,y0,y1,col,fl=3)=>ax?w._box(x+a0,y0,z+b0,x+a1,y1,z+b1,col,fl):w._box(x+b0,y0,z+a0,x+b1,y1,z+a1,col,fl);
+      const btr=(x,z,ax)=>{const g=w.T(x,z),B=BX(x,z,ax),c=0x55603f;
+        B(-3.7,3.7,-1.45,1.45,g+.35,g+1.95,c);B(-3.1,2.3,-1.2,1.2,g+1.95,g+2.25,c);B(-.6,.9,-.75,.75,g+2.25,g+2.85,0x4e583a);B(.9,2.9,-.06,.06,g+2.5,g+2.62,0x2a2a2a,0);
+        for(const a of[-2.6,-.9,.9,2.6])for(const s of[-1,1])B(a-.5,a+.5,s>0?1.2:-1.62,s>0?1.62:-1.2,g-.1,g+1.0,0x1e1e1e)};
+      const tractor=(x,z,g,ax)=>{const B=BX(x,z,ax);B(-1.8,1.6,-.6,.6,g+.6,g+1.6,0x7a4a32);B(-1.8,-.4,-.75,.75,g+1.6,g+2.8,0x6a3e2c);
+        B(-1.7,-.3,-1.25,-.75,g,g+1.5,0x1e1e1e);B(-1.7,-.3,.75,1.25,g,g+1.5,0x1e1e1e);B(.8,1.5,-1.0,-.65,g,g+.9,0x1e1e1e);B(.8,1.5,.65,1.0,g,g+.9,0x1e1e1e)};
+      const truck=(x,z,g,ax,load)=>{const B=BX(x,z,ax);B(-4,-1.8,-1.2,1.2,g+.5,g+2.7,0x4f6a52);B(-1.8,4,-1.25,1.25,g+.5,g+1.3,0x3a3632);if(load){B(-1.6,3.9,-1.15,1.15,g+1.3,g+2.6,0x7a5a38);B(-1.6,3.9,-.8,.8,g+2.6,g+3.2,0x86643f)}
+        for(const a of[-3,.5,2.8])for(const s of[-1,1])B(a-.5,a+.5,s>0?1.0:-1.35,s>0?1.35:-1.0,g,g+1,0x1e1e1e)};
+      // railway: sleepers + rails following the graded embankment, wagons with an open (shoot-through) gap under the body
+      const rails=(xc,z0,z1)=>{const SL=hexRGB(0x4a4038);for(let z=z0;z<z1;z+=1.35){const y=w.T(xc,z)+.07;const A=mxz(xc-1.25,z),B=mxz(xc+1.25,z+.26);w.vis.quad([A[0],y,A[1]],[B[0],y,A[1]],[B[0],y,B[1]],[A[0],y,B[1]],SL)}
+        for(let z=z0;z<z1;z+=10){const z2=Math.min(z1,z+10),y=(w.T(xc,z)+w.T(xc,z2))/2;for(const o of[-.75,.75])w._box(xc+o-.05,y+.1,z,xc+o+.05,y+.26,z2,0x55514c,0)}};
+      const wagon=(xc,z0,type,col)=>{const L=type==='loco'?17:type==='flat'?13:13.5,z1=z0+L,g=Math.max(w.T(xc,z0),w.T(xc,z1),w.T(xc,(z0+z1)/2))+.05;
+        w._box(xc-1.15,g+.2,z0+1,xc+1.15,g+1.05,z0+3.2,0x2a2826);w._box(xc-1.15,g+.2,z1-3.2,xc+1.15,g+1.05,z1-1,0x2a2826);
+        if(type==='box'){w._box(xc-1.5,g+1.05,z0,xc+1.5,g+4.1,z1,col);w._box(xc-1.55,g+4.1,z0+.2,xc+1.55,g+4.35,z1-.2,0x5a5550);w._box(xc-1.56,g+1.4,z0+5.2,xc+1.56,g+3.7,z0+8.3,0x4a3a2e,0)}
+        else if(type==='tank'){w._box(xc-1.5,g+1.05,z0+.3,xc+1.5,g+1.35,z1-.3,0x2a2826);w._box(xc-1.35,g+1.35,z0+.6,xc+1.35,g+3.9,z1-.6,col);w._box(xc-.5,g+3.9,(z0+z1)/2-.6,xc+.5,g+4.4,(z0+z1)/2+.6,col)}
+        else if(type==='flat'){w._box(xc-1.5,g+1.05,z0,xc+1.5,g+1.45,z1,0x3a3632);w._box(xc-1.35,g+1.45,z0+.5,xc+1.35,g+2.6,z1-.5,0x7a5a38);w._box(xc-1.1,g+2.6,z0+.7,xc+1.1,g+3.2,z1-.7,0x86643f);
+          for(let s=z0+1;s<z1;s+=3.6)for(const o of[-1.42,1.42])w._box(xc+o-.07,g+1.45,s-.07,xc+o+.07,g+3.3,s+.07,0x3a3632,0)}
+        else{w._box(xc-1.55,g+1.05,z0,xc+1.55,g+3.6,z1,col);w._box(xc-1.6,g+1.05,z1-4,xc+1.6,g+4.5,z1,col);w._box(xc-1.57,g+1.6,z0,xc+1.57,g+1.9,z1,0xb5462e,0);w._box(xc-1.2,g+3.6,z0+1,xc+1.2,g+3.9,z0+6,0x2f3a30)}};
+
+      // ---- military camp ----
       {const g=padH(-425,20);
        w.wall(-452,-24,-398,-24,g-.2,1.5,.9,SB,[[22,30,0,1.5]]);w.wall(-452,64,-398,64,g-.2,1.5,.9,SB,[[22,30,0,1.5]]);
        w.wall(-452,-23.5,-452,63.5,g-.2,1.5,.9,SB,[[38,46,0,1.5]]);w.wall(-398,-23.5,-398,63.5,g-.2,1.5,.9,SB,[[14,22,0,1.5],[52,60,0,1.5]]);
-       for(const z0 of[-16,0,16])w.building(-447,z0,-433,z0+9,g,2,3.2,{col:0x7d8a68,floor:0x5a5a50,stair:0x55585c,roofAccess:true,ground:true,doors:{z0:[[3,5]],x0:[[3,5]]}});
-       w.building(-428,40,-422,49.2,g,4,3.4,{col:0x8a8a7c,floor:0x5a5a50,stair:0x55585c,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]],x0:[[3,5]]}});
-       tower(-404,-16,g);tower(-404,56,g);
-       w.container(-418,g,-12,true,CON[0]);w.container(-418,g,-9.4,true,CON[1]);w.container(-418,g+2.6,-12,true,CON[3]);w.container(-410,g,48,false,CON[2]);
-       tank(-444,48,g,5,0xd8d4ca);tank(-444,58,g,5,0xcac6bc);
-       w._box(-428,g,4,-416,g+.05,16,0x6f6a62,0);w._box(-423,g+.05,7,-421,g+.08,13,0xe8e6de,0);w._box(-426,g+.05,9.2,-418,g+.08,10.8,0xe8e6de,0)}
-      // ---- villages ----
-      village(-290,-150,13,711,true);village(-200,230,7,733,false);village(-110,40,12,755,false);
-      // ---- castle on its hill ----
+       for(const z0 of[-16,0,16])w.building(-447,z0,-433,z0+9,g,2,3.2,{col:OLV,floor:0x5a5a50,stair:0x55585c,roofAccess:true,ground:true,doors:{z0:[[3,5]],x0:[[3,5]]}});
+       w.building(-428,40,-422,49.2,g,4,3.4,{col:0x7d826c,floor:0x5a5a50,stair:0x55585c,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]],x0:[[3,5]]}});
+       tower(-404,-15,g);tower(-404,57,g);
+       w.container(-418,g,-12,true,CON[2]);w.container(-418,g,-9.4,true,CON[3]);w.container(-418,g+2.6,-12,true,CON[2]);w.container(-410,g,48,false,CON[2]);
+       tank(-444,48,g,5,0x7a8068);tank(-444,58,g,5,0x6e7460);btr(-414,27,true);btr(-430,-5,false);truck(-414,8,g,true,false)}
+      // ---- villages: Beresowka (church), Gorki (well), Krasnoje (statue) ----
+      village(-290,-150,13,711,'church');village(-200,230,7,733,'well');village(-110,40,12,755,'statue');
+      // ---- monastery on its hill: white walls, corner towers, blue and gold domes ----
       {const g=padH(-160,-330);
-       w.wall(-178,-348,-142,-348,g-.5,6,1.2,STN,[[10,13,2.5,6]]);w.wall(-178,-312,-142,-312,g-.5,6,1.2,STN,[[20,23,0,6]]);
-       w.wall(-178,-347.4,-178,-312.6,g-.5,6,1.2,STN,[[15,19,0,6]]);w.wall(-142,-347.4,-142,-312.6,g-.5,6,1.2,STN,[[13,21,0,6]]);
-       w.building(-166,-336,-154,-324,g,3,3.4,{col:STN,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z0:[[2,4]],x0:[[4,6]],z1:[[2,4]]}});
-       w.building(-150,-322.2,-144,-313,g,3,3.4,{col:STN,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]]}});
-       w.building(-176,-347,-170,-337.8,g,3,3.4,{col:STN,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z1:[[1.5,3.5]]}})}
-      // ---- farms ----
-      farm(-360,-300,811);farm(-330,130,822);farm(-400,-200,833);
-      // ---- mountain summit hut + mast ----
-      {const g=padH(-330,360);w.building(-333,355.4,-327,364.6,g,1,3.2,{col:0xc8c0ae,floor:0x5a4a3a,ground:true,roofAccess:true,doors:{z0:[[1.5,3.5]],x0:[[3,5]]}});
-       w._box(-336.3,g,366,-335.7,g+16,366.6,0x5d6268)}
-      // ---- windmills ----
-      for(const[x,z]of[[-270,30],[-370,-80]]){const g=padH(x,z);w._box(x-2.2,g-.3,z-2.2,x+2.2,g+13,z+2.2,0xd8d0bc);w._box(x-2.6,g+13,z-2.6,x+2.6,g+15,z+2.6,0x6a4a3a);
-        const mx=w.mirror?-x:x,mz=w.mirror?-z:z;const c=hexRGB(0xe6e0d0);w.vis.box(mx-.25,g+4,mz+2.6,mx+.25,g+24,mz+3,0xe6e0d0);w.vis.box(mx-10,g+13.75,mz+2.6,mx+10,g+14.25,mz+3,0xe6e0d0)}
+       w.wall(-178,-348,-142,-348,g-.5,6,1.2,WH,[[10,13,2.5,6]]);w.wall(-178,-312,-142,-312,g-.5,6,1.2,WH,[[20,23,0,6]]);
+       w.wall(-178,-347.4,-178,-312.6,g-.5,6,1.2,WH,[[15,19,0,6]]);w.wall(-142,-347.4,-142,-312.6,g-.5,6,1.2,WH,[[13,21,0,6]]);
+       const r=w.building(-166,-336,-154,-324,g,3,3.4,{col:WH,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z0:[[2,4]],x0:[[4,6]],z1:[[2,4]]}});
+       w._box(-161.9,r,-331.6,-158.7,r+2.2,-328.4,null,3);dome(-160.3,-330,r,2,0x2f5fa8);
+       w.building(-150,-322.2,-144,-313,g,3,3.4,{col:WH,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z0:[[1.5,3.5]]}});
+       w.building(-176,-347,-170,-337.8,g,3,3.4,{col:WH,floor:0x5a5248,stair:0x6a6258,roofAccess:true,ground:true,doors:{z1:[[1.5,3.5]]}});
+       for(const[x,z]of[[-178,-348],[-142,-348],[-178,-312],[-142,-312]]){w._box(x-2.2,g-.5,z-2.2,x+2.2,g+8,z+2.2,WH);w.roof(x-2.3,z-2.3,x+2.3,z+2.3,g+8,1.4,0x3f6a8a);dome(x,z,g+8.6,.9,0xd8b04a)}}
+      // ---- kolkhoz: two long cowsheds, silos, water tower, office, rusting tractors ----
+      {const g=padH(-360,-300);
+       for(const[z0,dz]of[[-320,'z1'],[-304,'z0']]){const d={x0:[[3.5,6.5]],x1:[[3.5,6.5]]};d[dz]=[[13,17]];const r=w.building(-390,z0,-360,z0+10,g,1,3.6,{col:0xb9b2a2,floor:0x5a5248,ground:true,doors:d});w.roof(-390,z0,-360,z0+10,r+1,2.4,0x7c807c)}
+       silo(-350,-286,g);silo(-343,-286,g);wtower(-333,-316,g);
+       {const d={x0:[[3,5]],z1:[[4,6]]};const r=w.building(-338,-300,-328,-291,g,2,3.2,{col:0xd8d0b8,floor:0x5a5248,stair:0x5a4a3a,ground:true,doors:d});w.roof(-338,-300,-328,-291,r+1,2,0x7a3f2c);nal(-338,-300,-328,-291,g,3.2,2,d,0xe8e6dc)}
+       tractor(-380,-285,g,true);tractor(-370,-283,g,false);truck(-389,-283,g,true,false)}
+      // ---- sawmill: open shed with saw line, log yard, office hut, sawdust heap ----
+      {const g=padH(-330,130);
+       for(const x of[-350,-343,-336,-329,-322])for(const z of[118,130])w._box(x-.18,g-.3,z-.18,x+.18,g+5.5,z+.18,WD);
+       w._box(-350.6,g+5.5,117.4,-321.4,g+5.75,130.6,null,3);w.roof(-350.4,117.6,-321.6,130.4,g+5.5,1.8,0x6a6e70);
+       w._box(-345,g-.2,123,-327,g+1.0,125,0x5a5650);w._box(-337.5,g-.2,121.8,-334.5,g+2.3,126.2,0x8a8a84);
+       for(const[x,z,ax]of[[-352,140,1],[-344,140,1],[-336,140,1],[-328,140,1],[-348,147,1],[-338,147,1],[-326,147,1],[-310,131,0],[-310,141,0]])w.placeCover({x,z,kind:'logpile',ax:!!ax,v:(((x*7+z*13)&255)+.5)/256},LOGC);
+       {const d={x0:[[3,5]]};const r=w.building(-316,112,-307,121,g,1,3,{col:LOG[1],floor:0x5a4630,ground:true,doors:d});w.roof(-316,112,-307,121,r+1,2.2,0x5d6266);nal(-316,112,-307,121,g,3,1,d,0x3f6fb0)}
+       {const[mx,mz]=mxz(-352,111);w.vis.blob(mx,g+.6,mz,3.6,2.1,3.2,0xa88552,w.rnd);w._box(-354.5,g-.3,109,-349.5,g+1.9,113,null,3)}}
+      // ---- logging camp: trailer huts on skids, big timber piles, logging truck, harvester ----
+      {const g=padH(-400,-200);
+       for(const z0 of[-217,-208.5,-200]){const r=w.building(-421,z0,-414,z0+3.4,g+.3,1,2.6,{col:0x5d6b70,floor:0x4a4a44,ground:true,doors:{x1:[[1,2.2]]}});w.roof(-421,z0,-414,z0+3.4,r+1,1,0x4a4e50)}
+       for(const[x,z]of[[-398,-212],[-389,-196],[-401,-186]]){w._box(x-5,g-.3,z-1.6,x+5,g+1.2,z+1.6,0x6a5038);w._box(x-4.8,g+1.2,z-1.2,x+4.8,g+2.2,z+1.2,0x7a5c40)}
+       truck(-382,-212,g,false,true);
+       {const B=BX(-405,-190,true);B(-2.5,2.5,-1.2,1.2,g+.6,g+2.2,0xc9a227);B(-2.5,-.5,-1.1,1.1,g+2.2,g+3.4,0xb8921f);for(const a of[-1.8,1.8])for(const s of[-1,1])B(a-.6,a+.6,s>0?1.2:-1.6,s>0?1.6:-1.2,g,g+1.2,0x1e1e1e);
+        beam([-404,g+2.6,-190],[-401,g+4.6,-190],.3,0xc9a227);beam([-401,g+4.6,-190],[-398.6,g+2.2,-190],.26,0xc9a227)}}
+      // ---- radar station on the summit: bunker, radome, lattice mast ----
+      {const g=padH(-330,360);
+       w.building(-340,351,-332,360.2,g,1,3.2,{col:0xa8a49a,floor:0x5a5a50,stair:0x55585c,roofAccess:true,ground:true,doors:{z1:[[2,4]],x1:[[2,4]]}});
+       {const[mx,mz]=mxz(-322,366);w.vis.prism(mx,g-.3,mz,3.4,3.1,0xb9b5aa,10,1,true);w.vis.blob(mx,g+5.4,mz,4.2,3.6,4.2,0xeeeeea,w.rnd);w._box(-325,g-.3,363,-319,g+7.5,369,null,3)}
+       {const x=-337,z=367,H=24;for(const[a,b]of[[-1,-1],[1,-1],[-1,1],[1,1]])beam([x+a*1.4,g-.2,z+b*1.4],[x+a*.3,g+H,z+b*.3],.16,0xa83a2e);
+        for(let y=4;y<H;y+=5){const s=1.4-1.1*y/H;for(const[a0,b0,a1,b1]of[[-1,-1,1,-1],[1,-1,1,1],[1,1,-1,1],[-1,1,-1,-1]])beam([x+a0*s,g+y,z+b0*s],[x+a1*s,g+y,z+b1*s],.1,0xd8d4ca)}
+        w._box(x-1.2,g-.3,z-1.2,x+1.2,g+H,z+1.2,null,1)}}
+      // ---- fire lookout towers ----
+      ftower(-263,31,padH(-271,31));ftower(-377,-79,padH(-385,-79));
+      // ---- railway: main line, station siding, standing trains ----
+      rails(EV_RAIL,-478,478);rails(-62.5,-112,22);
+      for(const[z0,t,c]of[[-112,'tank',0x2a2a2a],[-95.5,'tank',0x6a6a64],[-62,'box',0x6e3a2a],[-45.5,'box',0x5a4a3a],[3,'flat',0]])wagon(-62.5,z0,t,c);
+      for(const[z0,t,c]of[[150,'loco',0x3e5a44],[170,'flat',0],[186,'flat',0],[202,'box',0x6e3a2a],[218.5,'flat',0]])wagon(EV_RAIL,z0,t,c);
+      {const g=padH(-73,-45),d={x1:[[9,11],[15,17]],x0:[[8.5,11]],z0:[[4,6]]};
+       const r=w.building(-80,-56,-70,-36,g,2,3.3,{col:0xcfb06a,floor:0x6a5a48,stair:0x5a4a3a,ground:true,doors:d});w.roof(-80,-56,-70,-36,r+1,2.4,0x4d6b55);nal(-80,-56,-70,-36,g,3.3,2,d,0xe8e6dc);
+       w._box(-69.8,g-.3,-68,-64.4,g+.45,-22,0x9a968c);w._box(-69,g+.45,-60,-67.8,g+.95,-57,0x6b5236);w._box(-69,g+.45,-32,-67.8,g+.95,-29,0x6b5236);
+       for(const z of[-64,-46,-26])w._box(-65.1,g+.45,z-.07,-64.96,g+4,z+.07,0x3a3a3a,0);w._box(-70.1,g+4.4,-48,-69.9,g+5,-44,0xe8e6dc,0)}
+      // ---- power line through the southern forest (lattice pylons, sagging wires) ----
+      {const[ax,az,bx,bz]=EV_PL,L=Math.hypot(bx-ax,bz-az),ux=(bx-ax)/L,uz=(bz-az)/L,px=-uz,pz=ux,tops=[];
+       for(let t=10;t<L-5;t+=54){const x=ax+ux*t,z=az+uz*t;if(EV_PADS.some(p=>Math.abs(x-p[0])<p[2]+6&&Math.abs(z-p[1])<p[3]+6)||evRoadD(x,z)<7)continue;
+         const g=w.T(x,z),H=17;for(const[a,b]of[[-1,-1],[1,-1],[-1,1],[1,1]])beam([x+a*1.5,g-.2,z+b*1.5],[x+a*.35,g+H,z+b*.35],.14,0x6a6e70);
+         for(const y of[5,10]){const s=1.5-1.15*y/H;for(const[a0,b0,a1,b1]of[[-1,-1,1,-1],[1,-1,1,1],[1,1,-1,1],[-1,1,-1,-1]])beam([x+a0*s,g+y,z+b0*s],[x+a1*s,g+y,z+b1*s],.1,0x6a6e70)}
+         beam([x+px*4.2,g+H-.6,z+pz*4.2],[x-px*4.2,g+H-.6,z-pz*4.2],.22,0x6a6e70);w._box(x-1.3,g-.3,z-1.3,x+1.3,g+H,z+1.3,null,1);tops.push([x,z,g+H-.9])}
+       for(let i=0;i+1<tops.length;i++){const a=tops[i],b=tops[i+1];for(const o of[-3.9,0,3.9]){const A=[a[0]+px*o,a[2],a[1]+pz*o],B=[b[0]+px*o,b[2],b[1]+pz*o],M=[(A[0]+B[0])/2,Math.min(A[1],B[1])-1.8,(A[2]+B[2])/2];beam(A,M,.07,0x2a2a2a);beam(M,B,.07,0x2a2a2a)}}}
+      // ---- lake: jetty, boat, bathhouse on the shore ----
+      {let zs=-150;while(zs>-205&&w.T(-215,zs)>w.water+.1)zs-=.5;const y=w.water+.45;
+       w._box(-216.6,y-.25,zs-14,-213.4,y,zs+3,0x6e5a40);for(let z=zs-13;z<zs+2;z+=4)for(const x of[-216.3,-213.7])w._box(x-.12,-1,z-.12,x+.12,y,z+.12,0x4e3e2c,0);
+       w._box(-212.4,w.water-.1,zs-9,-210.8,w.water+.5,zs-5.5,0x5a4632);
+       const g=padH(-224,-146),r=w.building(-228,-150,-221,-144,g,1,2.8,{col:LOG[2],floor:0x5a4630,ground:true,doors:{x1:[[2,4]]}});w.roof(-228,-150,-221,-144,r+1,2,0x5d6266)}
       // ---- trench sandbags ----
       for(let i=0;i<EV_TR.length-1;i++){const a=EV_TR[i],b=EV_TR[i+1];for(let t=.25;t<.8;t+=.5)w.gbox(lerp(a[0],b[0],t)+2.4,lerp(a[1],b[1],t),.9,.6,3,0xa8966a)}
-      // ---- dry-stone walls along the field roads (alternating sides, gaps every few metres) ----
+      // ---- timber stacks along the forest tracks (alternating sides) ----
       for(let si=0;si<EV_ROADS.length;si+=2){const s=EV_ROADS[si],dx=s[2]-s[0],dz=s[3]-s[1],L=Math.hypot(dx,dz),ux=dx/L,uz=dz/L,alongX=Math.abs(dx)>=Math.abs(dz);
-        for(let t=8;t<L-8;t+=13){const side=((t/13)|0)%2?1:-1,px=s[0]+ux*t-uz*4.4*side,pz=s[1]+uz*t+ux*4.4*side;
-          if(EV_PADS.some(p=>Math.abs(px-p[0])<p[2]+3&&Math.abs(pz-p[1])<p[3]+3)||Math.abs(px-EV_R(pz))<22||px>-14||Math.hypot(px+215,pz+215)<58)continue;
-          const g=w.T(px,pz);if(alongX)w.wall(px-2.2,pz,px+2.2,pz,g-.35,1.6,.55,STN);else w.wall(px,pz-2.2,px,pz+2.2,g-.35,1.6,.55,STN)}}
-      // ---- hunting stands ----
-      for(const[x,z]of[[-360,250],[-250,-380],[-430,-330],[-140,170],[-300,300]])stand(x,z);
-      // ---- forests (jittered grid where the forest mask is high) + scattered meadow trees and bushes ----
-      const inPad=(x,z,m)=>EV_PADS.some(p=>Math.abs(x-p[0])<p[2]+m&&Math.abs(z-p[1])<p[3]+m);
-      const blocked=(x,z,m)=>inPad(x,z,m)||evRoadD(x,z)<5+m||Math.abs(x-EV_R(z))<20||Math.hypot(x+215,z+215)<58||x<-458||Math.abs(z)>478||x>-12||(x>-232&&x<-180&&z>-112&&z<32);
-      for(let gx=-490;gx<-14;gx+=8)for(let gz=-486;gz<486;gz+=8){const x=gx+w.rnd()*6,z=gz+w.rnd()*6,f=evForest(x,z),rr=w.rnd(),kind=w.rnd()<.6?0:1,ht=8+w.rnd()*7;
-        if(f>.45&&rr<.55){if(!blocked(x,z,4)&&w.T(x,z)<40)w.tree(x,z,ht,kind,TC)}
-        else if(f>.25&&rr<.12){if(!blocked(x,z,3))w.bush(x,z,1.1+w.rnd()*.8,w.rnd()<.5?0x3f5e2a:0x4f6d30)}
-        else if(rr<.012){if(!blocked(x,z,4)&&w.T(x,z)<40)w.tree(x,z,ht,1,TC)}}
+        for(let t=10;t<L-10;t+=22){const side=((t/22)|0)%2?1:-1,px=s[0]+ux*t-uz*5*side,pz=s[1]+uz*t+ux*5*side;
+          if(EV_PADS.some(p=>Math.abs(px-p[0])<p[2]+4&&Math.abs(pz-p[1])<p[3]+4)||Math.abs(px-EV_R(pz))<22||px>-14||Math.hypot(px+215,pz+215)<58||Math.abs(px-EV_RAIL)<7||evSwamp(px,pz)>.1)continue;
+          w.placeCover({x:px,z:pz,kind:'logpile',ax:alongX,v:(((si*31+t*7)&255)+.5)/256},LOGC)}}
+      // ---- hunting stands deep in the forest ----
+      for(const[x,z]of[[-360,251],[-250,-379],[-430,-329],[-140,171],[-300,301],[-460,-121],[-240,401]])stand(x,z);
     },1777);
-    // ---- cover everywhere (sandbags, crates, wrecks, log piles, hay, walls, rocks, bush thickets) ----
+    // ---- the taiga: jittered grid, spruce / pine / birch, saplings, bushes, windfalls, dead trees in the swamps ----
+    const FR=mulberry32(4711);
+    const both=(seed,fn)=>{w.mirror=false;w.rnd=mulberry32(seed);fn();w.mirror=true;w.rnd=mulberry32(seed);fn();w.mirror=false};
+    for(let gx=-488;gx<-12;gx+=6.5)for(let gz=-487;gz<487;gz+=6.5){
+      const x=gx+FR()*5.5,z=gz+FR()*5.5,r=FR(),u=FR(),v=FR(),seed=(FR()*4294967296)>>>0;
+      const h=w.terrainH(x,z);if(h>42.5)continue;
+      const o=evOpen(x,z),sw=evSwamp(x,z),dr=Math.abs(x-EV_R(z));
+      if(h<w.water+.15){if(sw>.2&&r<.09&&w.areaFree(x,z,.5,.5))both(seed,()=>w.snag(x,z,4+u*6,TC));continue}
+      if(dr<24&&dr>11){if(r<.2&&w.areaFree(x,z,.8,.8))both(seed,()=>w.bush(x,z,1.3+u*.9,u<.5?0x6f7f52:0x7a8a5a));continue}
+      let p=o<.5?.82:o<.85?.3:.02;if(h>34)p*=.4;if(sw>.25)p*=.35;
+      if(r<p){if(!w.areaFree(x,z,.9,.9))continue;
+        if(sw>.25){both(seed,()=>u<.55?w.snag(x,z,5+v*7,TC):w.birch(x,z,8+v*6,TC,v<.6));continue}
+        if(o<.45&&u<.025){const ax=v<.5,L=7+v*6;if(w.areaFree(x,z,ax?L/2+.6:1.8,ax?1.8:L/2+.6))both(seed,()=>w.fallen(x,z,L,ax,TC));continue}
+        const pb=.12+.45*o,pp=h>14?.3:.14;
+        if(u<pb)both(seed,()=>w.birch(x,z,10+v*7,TC,v<.35));else if(u<pb+pp)both(seed,()=>w.pine(x,z,15+v*9,TC));else both(seed,()=>w.spruce(x,z,12+v*11,TC))}
+      else if(o<.5&&r<p+.15){if(w.areaFree(x,z,.4,.4))both(seed,()=>w.sapling(x,z,2+u*2.8,TC))}
+      else if(r<p+(o<.5?.17:.04)){if(w.areaFree(x,z,.6,.6))both(seed,()=>w.bush(x,z,.9+u*.8,u<.5?0x3f5a2a:0x4a6230))}}
+    w.mirror=false;w.rnd=mulberry32(99);
+    // ---- extra cover: boulders, timber, old positions, wrecks ----
     const nearRiver=(x,z)=>Math.abs(x-EV_R(z))<16;
-    w.scatter({n:330,x0:-470,x1:-20,z0:-470,z1:470,gap:7,seed:901,kinds:[['sand',2],['sandL',1.5],['crates',1.2],['logpile',1.5],['hay',1.2],['rock',2.5],['wall',2],['bushes',2.5],['car',1],['barrels',.6],['barrier',.6]],
-      cols:{wall:0x8f897c,rock:0x857f72},excl:(x,z)=>x<-458||nearRiver(x,z)||Math.hypot(x+215,z+215)<58||Math.abs(z)>472});
-    w.scatter({n:24,x0:-70,x1:-14,z0:-470,z1:470,gap:9,seed:902,kinds:[['sand',2],['sandL',2],['rock',2],['logpile',1],['bushes',2]],excl:(x,z)=>nearRiver(x,z)||Math.abs(z)>472});
+    w.scatter({n:280,x0:-470,x1:-20,z0:-470,z1:470,gap:8,seed:901,kinds:[['rock',3],['logpile',3],['bushes',1.2],['sand',1.2],['sandL',1],['car',.6],['crates',.4],['barrels',.3]],
+      cols:{rock:0x7d786c,log:0x6a5038,log2:0x7a5c40,sand:0x9a8f6a,sand2:0x8c8160},excl:(x,z)=>x<-458||nearRiver(x,z)||Math.hypot(x+215,z+215)<58||Math.abs(z)>472||Math.abs(x-EV_RAIL)<5||evSwamp(x,z)>.2});
+    w.scatter({n:24,x0:-70,x1:-14,z0:-470,z1:470,gap:9,seed:902,kinds:[['sand',2],['sandL',2],['rock',2],['logpile',1],['bushes',2]],excl:(x,z)=>nearRiver(x,z)||Math.abs(z)>472||Math.abs(x-EV_RAIL)<5});
   }
 };
 MAPS.push(MAP_EVENT);
@@ -1493,8 +1686,20 @@ function buildMapScene(w){
   }
   const idx=[];for(let iz=0;iz<hd-1;iz++)for(let ix=0;ix<hw-1;ix++){const a=iz*hw+ix,b=a+1,c=a+hw,e=c+1;if((ix+iz)&1)idx.push(a,c,b,b,c,e);else idx.push(a,c,e,a,e,b)}
   const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.BufferAttribute(pos,3));tg.setAttribute('color',new THREE.BufferAttribute(col,3));tg.setIndex(idx);tg.computeVertexNormals();
-  const tm=new THREE.Mesh(tg,new THREE.MeshLambertMaterial({vertexColors:true}));tm.receiveShadow=true;tm.castShadow=true;mapGroup.add(tm);
-  const sm=new THREE.Mesh(w.vis.build(),new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));sm.castShadow=true;sm.receiveShadow=true;mapGroup.add(sm);
+  const tmat=new THREE.MeshLambertMaterial({vertexColors:true});
+  if(!d.tile){const tm=new THREE.Mesh(tg,tmat);tm.receiveShadow=true;tm.castShadow=true;mapGroup.add(tm)}
+  else{ // chunks share the vertex buffers, each with its own index + bounding sphere so off-screen ground is culled
+    const c=Math.max(4,Math.round(d.tile/sp)),P=tg.attributes.position;tg.setIndex(null);
+    for(let tz=0;tz<hd-1;tz+=c)for(let tx=0;tx<hw-1;tx+=c){const ix1=Math.min(hw-1,tx+c),iz1=Math.min(hd-1,tz+c),ti=[];let lo=1e9,hi=-1e9;
+      for(let iz=tz;iz<iz1;iz++)for(let ix=tx;ix<ix1;ix++){const a=iz*hw+ix,b=a+1,cc=a+hw,e=cc+1;if((ix+iz)&1)ti.push(a,cc,b,b,cc,e);else ti.push(a,cc,e,a,e,b)}
+      for(let iz=tz;iz<=iz1;iz++)for(let ix=tx;ix<=ix1;ix++){const y=P.getY(iz*hw+ix);if(y<lo)lo=y;if(y>hi)hi=y}
+      const g=new THREE.BufferGeometry();g.setAttribute('position',P);g.setAttribute('normal',tg.attributes.normal);g.setAttribute('color',tg.attributes.color);g.setIndex(ti);
+      const hx=(ix1-tx)*sp/2,hz=(iz1-tz)*sp/2;g.boundingSphere=new THREE.Sphere(new THREE.Vector3(w.x0+tx*sp+hx,(lo+hi)/2,w.z0+tz*sp+hz),Math.hypot(hx,hz,(hi-lo)/2)+.5);
+      const m=new THREE.Mesh(g,tmat);m.receiveShadow=true;m.castShadow=false;m.matrixAutoUpdate=false;mapGroup.add(m)}}
+  const smat=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
+  const geos=d.tile?w.vis.buildTiles(d.tile,w.x0,w.z0,w.W,w.D):[w.vis.build()];
+  for(const g of geos){const sm=new THREE.Mesh(g,smat);sm.castShadow=true;sm.receiveShadow=true;sm.matrixAutoUpdate=false;mapGroup.add(sm)}
+  camera.far=d.far||700;camera.updateProjectionMatrix();skyMesh.scale.setScalar(Math.min(1,camera.far*.9/500));
   if(w.water>-100){const wm=new THREE.Mesh(new THREE.PlaneGeometry(w.W,w.D),new THREE.MeshLambertMaterial({color:0x35525c,transparent:true,opacity:.8}));wm.rotation.x=-Math.PI/2;wm.position.y=w.water;mapGroup.add(wm)}
   // outer apron
   const avg=(arr)=>arr.reduce((a,b)=>a+b,0)/arr.length;const rowN=[],rowS=[],colW=[],colE=[];
@@ -1869,26 +2074,37 @@ function squadSpots(cx,cz,count){
   while(pts.length<count){const x=cx+(Math.random()-.5)*12,z=cz+(Math.random()-.5)*12;pts.push([x,W.floorAt(x,z,999,RAD),z])}
   return pts;
 }
-function planSquadRoute(s){
-  const W=G.world,own=s.team===0?-1:1,used=[];
-  const pick=(side)=>{let best=-1,bs=1e9;W.posts.forEach((p,i)=>{if(p.side!==side||used.includes(i))return;const sc=Math.abs(p.z-s.lane)+Math.abs(p.x)*(side===own?.15:.25)+Math.random()*150;if(sc<bs){bs=sc;best=i}});if(best>=0)used.push(best);return best};
-  s.route=[pick(own),pick(0),pick(-own)].filter(i=>i>=0);s.ri=0;s.state='move';
+function planSquadRoute(s){ // objective near the spawn, one halfway to the nearest enemy squad, then the enemy's area
+  const W=G.world;let E=null,bd=1e18;for(const o of G.squads){if(o.team===s.team)continue;const d=(o.cx-s.cx)**2+(o.cz-s.cz)**2;if(d<bd){bd=d;E=o}}
+  const ex=E?E.cx:-s.cx,ez=E?E.cz:-s.cz,used=[];
+  const pick=(tx,tz,j)=>{let best=-1,bs=1e18;W.posts.forEach((p,i)=>{if(used.includes(i))return;const sc=Math.hypot(p.x-tx,p.z-tz)+Math.random()*j;if(sc<bs){bs=sc;best=i}});if(best>=0)used.push(best);return best};
+  s.route=[pick(lerp(s.cx,ex,.15),lerp(s.cz,ez,.15),70),pick(lerp(s.cx,ex,.55),lerp(s.cz,ez,.55),90),pick(ex,ez,60)].filter(i=>i>=0);s.ri=0;s.state='move';
 }
 function squadAssign(s){
   for(const m of s.members){if(m.kind!=='bot'||!m.ai)continue;const ai=m.ai;
     if(s.ri<s.route.length){ai.post=s.route[s.ri];ai.state='move';ai.holdMax=1e9}else{ai.state='hunt';releaseClaim(m)}}
 }
+// random spot anywhere on the map: walkable, connected, far from enemy squads, a bit apart from friendly ones
+function squadSpawnSpot(t,centers){
+  const W=G.world,nav=G.nav,R=nav&&nav._reach,m=W.W/2-35,ok=W.def.spawnOK;
+  for(let minE=180;minE>30;minE*=.85)for(let k=0;k<300;k++){
+    const x=(Math.random()*2-1)*m,z=(Math.random()*2-1)*m;if(ok&&!ok(x,z))continue;
+    if(centers.some(c=>{const d2=(c.x-x)**2+(c.z-z)**2;return c.t!==t?d2<minE*minE:d2<minE*minE*.2}))continue;
+    if(nav){const n=nav.nodeAt(x,W.terrainH(x,z),z);if(n<0||(R&&!(R[n]<1e9)))continue}
+    return{x,z,t}}
+  return{x:(Math.random()*2-1)*150,z:(Math.random()*2-1)*150,t};
+}
 function setupSquads(){
-  for(let t=0;t<2;t++){
-    const mem=G.E.filter(e=>e.team===t);const sizes=squadSizes(mem.length);let i=0;const n=sizes.length;
-    sizes.forEach((sz,si)=>{
-      const lane0=-400+(si+.5)*800/n,lane=t===0?lane0:-lane0;
-      const s={id:G.squads.length,team:t,name:SQUAD_NAMES[si%SQUAD_NAMES.length],members:mem.slice(i,i+sz),lane,route:[],ri:0,state:'move',holdT:0,leader:null,lag:0,shareT:0};i+=sz;G.squads.push(s);
-      const spots=squadSpots(t===0?G.world.x0+30:-(G.world.x0+30),lane,s.members.length);
-      s.members.forEach((e,k)=>{e.squad=s;placeEnt(e,spots[k]);if(e.kind==='bot')mkAI(e)});
-      planSquadRoute(s);squadAssign(s);
-    });
-  }
+  const nav=G.nav;if(nav&&!nav._reach){const n0=postNode(0);nav._reach=n0>=0?nav.field([n0]).dist:null}
+  const mem=[0,1].map(t=>G.E.filter(e=>e.team===t)),sizes=mem.map(m=>squadSizes(m.length)),used=[0,0],cnt=[0,0],centers=[],order=[];
+  const first=Math.random()<.5?0:1;for(let i=0;i<Math.max(sizes[0].length,sizes[1].length);i++)for(const t of[first,1-first])if(i<sizes[t].length)order.push(t);
+  for(const t of order){const si=cnt[t]++,sz=sizes[t][si],c=squadSpawnSpot(t,centers);centers.push(c);
+    const s={id:G.squads.length,team:t,name:SQUAD_NAMES[si%SQUAD_NAMES.length],members:mem[t].slice(used[t],used[t]+sz),cx:c.x,cz:c.z,route:[],ri:0,state:'move',holdT:0,leader:null,lag:0,shareT:0};used[t]+=sz;G.squads.push(s);
+    const spots=squadSpots(c.x,c.z,s.members.length);s.members.forEach((e,k)=>{e.squad=s;placeEnt(e,spots[k])})}
+  for(const s of G.squads){planSquadRoute(s);
+    const P=s.route.length?G.world.posts[s.route[0]]:null,fx=P?P.x:-s.cx,fz=P?P.z:-s.cz;
+    for(const e of s.members){e.yaw=e.tyaw=Math.atan2(-(fx-e.x),-(fz-e.z))+(Math.random()-.5)*.5;if(e.kind==='bot')mkAI(e)}
+    squadAssign(s)}
 }
 function squadsUpdate(dt){
   for(const s of G.squads){
@@ -2242,8 +2458,8 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
       if(this.inGame){
         const bots=this.bots;let s='';for(const e of bots)s+=encEnt(e);
         p.nb=bots.length;const nc=Math.ceil(bots.length/25);for(let k=0;k<18;k++)p['b'+k]=k<nc?s.slice(k*ENT_LEN*25,(k+1)*ENT_LEN*25):null;
-        p.bs=this.rings.bs.join('');p.kf=this.rings.kf;p.bh=this.rings.bh;
-      }else{p.nb=null;for(let k=0;k<18;k++)p['b'+k]=null;p.bs=null;p.kf=null;p.bh=null}
+        p.bs=this.rings.bs.join('');p.kf=this.rings.kf;p.bh=this.rings.bh;p.hsp=this.hsp||null;p.hsq=this.hsqData();
+      }else{p.nb=null;for(let k=0;k<18;k++)p['b'+k]=null;p.bs=null;p.kf=null;p.bh=null;p.hsp=null;p.hsq=null}
     }
     if(this.inGame&&G.me){p.rd=G.round;p.al=G.me.alive?1:0;p.ps=encEnt(G.me);p.sh=this.rings.sh.join('');p.hh=this.rings.hh;p.dk=this.myDeath;p.k=G.me.kills}
     else{p.rd=null;p.al=null;p.ps=null;p.sh=null;p.hh=null;p.dk=null}
@@ -2324,7 +2540,13 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
       const e=newEnt('rhuman',pr.tm===1?1:0,cleanName(pr.nm)||'Spieler');e.peer=p.peer;e.net=true;e.wpn=(pr.w|0)%WPN.length;this.humans.set(p.peer,e);hs.push({team:e.team,ent:e})}
     return hs;
   },
-  afterSetupRound(){this.bots=G.E.filter(e=>e.kind==='bot').sort((a,b)=>a.slot-b.slot)},
+  afterSetupRound(){this.bots=G.E.filter(e=>e.kind==='bot').sort((a,b)=>a.slot-b.slot);this.hsp=null;this.hsqIds=[];
+    if(G.squads.length){const hsp={r:G.round},ids=new Set();for(const e of G.E){if(e.kind!=='rhuman'||!e.squad)continue;hsp[e.peer]=[+e.x.toFixed(2),+e.y.toFixed(2),+e.z.toFixed(2),+e.yaw.toFixed(2),e.squad.id];ids.add(e.squad.id)}
+      this.hsp=hsp;this.hsqIds=[...ids]}},
+  hsqData(){if(!this.hsqIds||!this.hsqIds.length)return null;const o={};
+    for(const id of this.hsqIds){const s=G.squads[id];if(!s)continue;
+      o[id]=[s.name,s.route,s.ri,s.state==='hold'?1:0,s.members.filter(m=>m.kind==='bot').map(m=>m.slot).join(','),s.members.filter(m=>m.kind==='rhuman').map(m=>m.peer).concat(s.members.includes(G.me)?[this.myPeer]:[])]}
+    return o},
   // ---------- per-frame application ----------
   applyGame(ps){
     const isHost=this.host&&G.mode==='host';
@@ -2343,6 +2565,14 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
         if(f.team!==e.team||f.wpn!==e.wpn){e.team=f.team;e.wpn=f.wpn;charColors(e.idx,e.team,e.skin,e.wpn)}
         if(e.alive&&!f.alive){e.alive=false;e.deadT=0;hitCall(e.x,e.y+1.7,e.z)}else if(!e.alive&&f.alive){e.alive=true;e.x=e.tx;e.y=e.ty;e.z=e.tz}
         e.crouch=f.crouch;e.gone=f.gone}
+      // event maps: own random spawn spot and squad come from the host
+      if(h.hsp&&h.hsp.r===G.round){const my=h.hsp[this.myPeer];
+        if(my&&this.spawnR!==G.round&&G.me.alive&&!G.me.gone){this.spawnR=G.round;placeEnt(G.me,[my[0],my[1],my[2]]);G.me.yaw=G.me.tyaw=my[3];camInit=false}
+        const q=my&&h.hsq&&h.hsq[my[4]];
+        if(q){let s=G.me.squad;if(!s||s.id!==my[4]||s.r!==G.round){s={id:my[4],r:G.round,team:G.me.team,name:q[0],route:[],ri:0,state:'move',members:[G.me],key:''};G.me.squad=s}
+          s.route=q[1]||[];s.ri=q[2]|0;s.state=q[3]?'hold':'move';const key=q[4]+'|'+(q[5]||[]).join(',')+'|'+this.humans.size;
+          if(s.key!==key){s.key=key;const mm=[G.me];for(const v of String(q[4]).split(','))if(v!==''){const b=this.botBySlot(+v);if(b)mm.push(b)}
+            for(const pe of q[5]||[]){if(pe===this.myPeer)continue;const hh=this.humans.get(pe);if(hh)mm.push(hh)}s.members=mm}}}
       this.shotsFrom(this.hostPeer+':bs',h.bs,0,true);
       this.freshList(this.hostPeer+':kf',h.kf,it=>it[0],it=>{const k=this.entById(it[1]),v=this.entById(it[2]);if(v){addFeed(k,v,it[3]);if(k===G.me){G.stats.kills++;G.me.kills++;AU.play('kill');hitMarker(true);popLabel(v,'HIT!')}}});
       this.freshList(this.hostPeer+':bh',h.bh,it=>it[0],it=>{if(it[1]===this.myPeer&&G.me.alive&&G.phase==='play'){killEnt(G.me,this.entById(it[2]),it[3]|0)}});
@@ -2370,7 +2600,7 @@ const NET={room:null,ok:null,gr:null,code:null,host:false,myPeer:null,name:'',te
     G.round=h.rn;G.seed=h.sd|0;G.score=h.sc||[0,0];G.matchOver=false;hideRoundOver();
     clearBBs();clearSpent();G.E=[];G.specIdx=-1;G.deathInfo=null;
     const me=G.me&&G.me.kind==='player'?G.me:newEnt('player',this.team,this.name);me.team=this.team;me.name=this.name;me.wpn=G.myWpn;me.kills=0;me.mags=null;
-    me.idx=0;G.E.push(me);G.me=me;this.myDeath=null;
+    me.idx=0;me.squad=null;G.E.push(me);G.me=me;this.myDeath=null;this.spawnR=-1;
     const sp=spawnPoints(me.team,1)[0];placeEnt(me,sp);
     this.bots=[];const s=botStr(h);
     for(let i=0;i<(h.nb|0);i++){const e=newEnt('rbot',0,botName(i,G.seed));e.slot=i;e.net=true;e.idx=G.E.length;G.E.push(e);this.bots.push(e);
@@ -2416,7 +2646,7 @@ function startRound(){
   enterRoundView();
 }
 function enterRoundView(){hideRoundOver();$('dead').hidden=true;$('spec').hidden=true;$('feed').innerHTML='';G.specIdx=-1;G.timeScale=1;$('bSpeed').textContent='Zeitraffer ×1';camInit=false;
-  centerMsg('RUNDE '+Math.max(1,G.round),MAPS[G.mapIdx].name+' · 50 gegen 50',3.2)}
+  centerMsg('RUNDE '+Math.max(1,G.round),MAPS[G.mapIdx].name+' · '+G.perTeam+' gegen '+G.perTeam,3.2)}
 function endRound(w){
   G.phase='end';G.phaseT=7;G.roundWinner=w;if(w>=0)G.score[w]++;AU.play('horn');
   G.matchOver=G.score[0]>=G.rtw||G.score[1]>=G.rtw;if(G.matchOver)G.phaseT=G.mode==='host'?10:1e9;
@@ -2516,12 +2746,12 @@ function mapImage(w,scale){
   }
   x2.putImageData(img,0,0);
   for(const s of w.sights){const r=Math.sqrt(s.r2);x2.fillStyle='rgba(30,52,24,.55)';x2.beginPath();x2.arc((s.x-w.x0)*scale,(s.z-w.z0)*scale,r*scale,0,TAU);x2.fill()}
-  const bs=w.boxes.filter(b=>b.fl&2).slice().sort((a,b)=>a.maxY-b.maxY);
+  const bs=w.boxes.filter(b=>(b.fl&2)&&!b.tr).sort((a,b)=>a.maxY-b.maxY);
   for(const b of bs){const gh=w.terrainH((b.minX+b.maxX)/2,(b.minZ+b.maxZ)/2);const t=clamp((b.maxY-gh)/12,0,1);const l=Math.round(30+t*55);
     x2.fillStyle=`rgb(${l+8},${l+4},${l})`;x2.fillRect((b.minX-w.x0)*scale,(b.minZ-w.z0)*scale,Math.max(1,(b.maxX-b.minX)*scale),Math.max(1,(b.maxZ-b.minZ)*scale))}
   for(const r of w.ramps){x2.fillStyle='rgba(200,170,110,.85)';x2.fillRect((r.x0-w.x0)*scale,(r.z0-w.z0)*scale,(r.x1-r.x0)*scale,(r.z1-r.z0)*scale)}
-  const sp=w.def.spawn;x2.strokeStyle='rgba(76,147,255,.9)';x2.lineWidth=Math.max(1,scale);x2.strokeRect((sp[0]-w.x0)*scale,(sp[1]-w.z0)*scale,(sp[2]-sp[0])*scale,(sp[3]-sp[1])*scale);
-  x2.strokeStyle='rgba(255,74,61,.9)';x2.strokeRect((-sp[2]-w.x0)*scale,(-sp[3]-w.z0)*scale,(sp[2]-sp[0])*scale,(sp[3]-sp[1])*scale);
+  const sp=w.def.spawn;if(!w.def.randomSpawn){x2.strokeStyle='rgba(76,147,255,.9)';x2.lineWidth=Math.max(1,scale);x2.strokeRect((sp[0]-w.x0)*scale,(sp[1]-w.z0)*scale,(sp[2]-sp[0])*scale,(sp[3]-sp[1])*scale);
+  x2.strokeStyle='rgba(255,74,61,.9)';x2.strokeRect((-sp[2]-w.x0)*scale,(-sp[3]-w.z0)*scale,(sp[2]-sp[0])*scale,(sp[3]-sp[1])*scale)}
   return c;
 }
 function drawMini(){

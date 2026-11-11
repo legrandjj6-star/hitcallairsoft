@@ -3,7 +3,7 @@
 3D-Airsoft-Shooter im Browser: 50 gegen 50 gegen Bots, ein Treffer und du bist raus.
 
 - 6 Karten mit Höhenunterschieden: Steinbruch, Waldfestung, Hafen und die grossen Karten Bergdorf, Wüstenstadt und Flugplatz
-- Special Event „Grossschlacht“: 1 × 1 km Karte, 200 gegen 200 in Trupps zu 10–30 Mann
+- Special Event „Grossschlacht in der Taiga“: 1 × 1 km russischer Wald mit Holzdörfern, Kloster, Kolchose, Bahnlinie und Sümpfen, 200 gegen 200 in Trupps zu 10–30 Mann, die zufällig verteilt auf der Karte starten
 - 5 Waffen: M4 AEG, MP5 SMG, M249 LMG, VSR-10 Sniper, M870 Shotgun
 - Bots, die Deckung suchen, rausschauen und von Deckung zu Deckung vorrücken
 
