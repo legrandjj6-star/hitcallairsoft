@@ -9,7 +9,7 @@
 
 ## Spielen
 
-Einfach `index.html` im Browser öffnen oder online spielen: https://legrandjj6-star.github.io/hit-call/. Du brauchst Maus und Tastatur.
+Einfach `index.html` im Browser öffnen oder online spielen: https://legrandjj6-star.github.io/hitcallairsoft/. Du brauchst Maus und Tastatur.
 
 | Taste | Aktion |
 |---|---|
