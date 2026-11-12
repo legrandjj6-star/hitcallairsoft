@@ -207,7 +207,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <div id="wname">M4 AEG</div>
     <div id="ammo"><span id="amag">30</span><small> / ∞</small></div>
     <div id="reload"><i></i></div>
-    <div id="slots"><span data-s="0">1 AEG</span><span data-s="1">2 SMG</span><span data-s="2">3 LMG</span><span data-s="3">4 SNIPER</span><span data-s="4">5 SHOTGUN</span></div>
+    <div id="slots"><span data-s="0">1 AEG</span><span data-s="1">2 SMG</span><span data-s="2">3 LMG</span><span data-s="3">4 SNIPER</span><span data-s="4">5 SHOTGUN</span><span data-s="5">6 AK</span><span data-s="6">7 GLOCK</span><span data-s="7">8 DMR</span></div>
   </div>
   <div id="xh"><i></i><i></i><i></i><i></i><b></b></div>
   <div id="hm"></div>
@@ -249,7 +249,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
       <kbd>C</kbd><span>Ducken: hinter Kisten, Sandsäcken und Mauern bist du geschützt, in Büschen versteckt</span>
       <kbd>Leertaste</kbd><span>Springen</span>
       <kbd>R</kbd><span>Nachladen</span>
-      <kbd>1 – 5</kbd><span>AEG · SMG · LMG · Sniper · Shotgun</span>
+      <kbd>1 – 8</kbd><span>AEG · SMG · LMG · Sniper · Shotgun · AK · Glock · DMR</span>
       <kbd>Tab</kbd><span>Grosse Karte</span>
       <kbd>Esc</kbd><span>Pause (als Host: Runde oder Match beenden)</span>
     </div>
@@ -264,7 +264,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <h3>Dein Team</h3>
     <div class="seg" id="soloTeam"><button class="t0 on" data-v="0">Blau</button><button class="t1" data-v="1">Rot</button></div>
     <h3>Startwaffe</h3>
-    <div class="seg" id="soloWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button></div>
+    <div class="seg" id="soloWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button><button data-v="5">AK-74</button><button data-v="6">Glock 17</button><button data-v="7">SR-25 DMR</button></div>
     <h3>Bot-Stärke</h3>
     <div class="seg" id="soloDiff"><button data-v="0">Leicht</button><button class="on" data-v="1">Normal</button><button data-v="2">Schwer</button></div>
     <h3>Runden zum Sieg</h3>
@@ -281,7 +281,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <h3>Karte</h3>
     <div class="maps" id="duelMaps"></div>
     <h3>Startwaffe</h3>
-    <div class="seg" id="duelWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button></div>
+    <div class="seg" id="duelWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button><button data-v="5">AK-74</button><button data-v="6">Glock 17</button><button data-v="7">SR-25 DMR</button></div>
     <h3>Bot-Stärke</h3>
     <div class="seg" id="duelDiff"><button data-v="0">Leicht</button><button class="on" data-v="1">Normal</button><button data-v="2">Schwer</button></div>
     <h3>Runden zum Sieg</h3>
@@ -298,7 +298,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <h3>Karte</h3>
     <div class="maps" id="brMaps"></div>
     <h3>Startwaffe</h3>
-    <div class="seg" id="brWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button></div>
+    <div class="seg" id="brWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button><button data-v="5">AK-74</button><button data-v="6">Glock 17</button><button data-v="7">SR-25 DMR</button></div>
     <h3>Bot-Stärke</h3>
     <div class="seg" id="brDiff"><button data-v="0">Leicht</button><button class="on" data-v="1">Normal</button><button data-v="2">Schwer</button></div>
     <p class="note">Auf der grossen Karte (Tab) siehst du die Zone: blau ist der aktuelle Kreis, weiss gestrichelt der nächste.</p>
@@ -316,7 +316,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     <h3>Dein Team</h3>
     <div class="seg" id="evTeam"><button class="t0 on" data-v="0">Blau</button><button class="t1" data-v="1">Rot</button></div>
     <h3>Startwaffe</h3>
-    <div class="seg" id="evWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button></div>
+    <div class="seg" id="evWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button><button data-v="5">AK-74</button><button data-v="6">Glock 17</button><button data-v="7">SR-25 DMR</button></div>
     <h3>Bot-Stärke</h3>
     <div class="seg" id="evDiff"><button data-v="0">Leicht</button><button class="on" data-v="1">Normal</button><button data-v="2">Schwer</button></div>
     <p class="note">Du kämpfst im Trupp Alpha, alle Trupps starten an zufälligen Orten im Wald. Eine Schlacht dauert bis zu 20 Minuten. Bist du raus, schaust du deinem Trupp zu und kannst die Zeit vorspulen. Im Multiplayer wählt der Host die Grossschlacht als Karte.</p>
@@ -363,7 +363,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
     </div>
     <div id="guestInfo" class="note" hidden></div>
     <h3>Startwaffe</h3>
-    <div class="seg" id="roomWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button></div>
+    <div class="seg" id="roomWpn"><button class="on" data-v="0">M4 AEG</button><button data-v="1">MP5 SMG</button><button data-v="2">M249 LMG</button><button data-v="3">VSR-10 Sniper</button><button data-v="4">M870 Shotgun</button><button data-v="5">AK-74</button><button data-v="6">Glock 17</button><button data-v="7">SR-25 DMR</button></div>
     <button class="btn pri" id="bRoomStart">Spiel starten <small>Alle aufs Feld</small></button>
   </section>
 
@@ -410,7 +410,7 @@ input[type=range]{width:100%;max-width:320px;accent-color:var(--orange)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const BUILD_VERSION='1794511411417';
+const BUILD_VERSION='1794512852297';
 'use strict';
 // ================= UTIL =================
 const TAU=Math.PI*2;
@@ -1679,6 +1679,125 @@ const MAP_EVENT={
 };
 MAPS.push(MAP_EVENT);
 
+// ---------- MAP 7: GEISTERSTADT (abandoned Soviet town, 260 x 190 m, point symmetric) ----------
+const GS_ROADS=[[-130,-50,130,-42],[-130,42,130,50],[-74,-95,-66,95],[66,-95,74,95],[-130,-4,-30,4],[30,-4,130,4]];
+function gsRoad(x,z,m=0){for(const r of GS_ROADS)if(x>r[0]-m&&x<r[2]+m&&z>r[1]-m&&z<r[3]+m)return true;return false}
+const GS_POOL=[-52,60,-30,74];
+function gsPoolH(x,z){const p=GS_POOL;if(x<p[0]||x>p[2]||z<p[1]||z>p[3])return null;return z>64&&z<70&&x>-36?lerp(-.5,2,(x+36)/6):-.5}
+// footprints of everything that needs flat ground (west half; the east half is the point mirror)
+const GS_BLD={A:[-112,-70,-78,-58,5],S:[-58,-70,-34,-56,3],M:[-104,-32,-86,-14,1],B:[-62,8,-50,38,4],C:[-112,20,-94,32,3]};
+const GS_FLAT=Object.values(GS_BLD).concat([[-112,66,-82,72],[-28,62,-20,70],[-38,14,-22,26],[-20,-26,-16,-22],[-46,28,-42,32],[-53,59,-29,75]]);
+function gsNearBld(x,z,m){if(x>0){x=-x;z=-z}for(const b of GS_FLAT)if(x>b[0]-m&&x<b[2]+m&&z>b[1]-m&&z<b[3]+m)return true;return false}
+// mirror aware thin beam (two crossed ribbons) for lattice work
+World.prototype.beam=function(a,b,wd,col){let[ax,ay,az]=a,[bx,by,bz]=b;if(this.mirror){ax=-ax;az=-az;bx=-bx;bz=-bz}
+  let dx=bx-ax,dy=by-ay,dz=bz-az;const l=Math.hypot(dx,dy,dz)||1;dx/=l;dy/=l;dz/=l;
+  let ux,uy,uz;if(Math.abs(dy)<.9){ux=-dz;uy=0;uz=dx}else{ux=0;uy=dz;uz=-dy}const ul=Math.hypot(ux,uy,uz)||1;ux/=ul;uy/=ul;uz/=ul;
+  const vx=dy*uz-dz*uy,vy=dz*ux-dx*uz,vz=dx*uy-dy*ux,h=wd/2,c=hexRGB(col),V=this.vis;
+  V.quad([ax-ux*h,ay-uy*h,az-uz*h],[bx-ux*h,by-uy*h,bz-uz*h],[bx+ux*h,by+uy*h,bz+uz*h],[ax+ux*h,ay+uy*h,az+uz*h],c);
+  V.quad([ax-vx*h,ay-vy*h,az-vz*h],[bx-vx*h,by-vy*h,bz-vz*h],[bx+vx*h,by+vy*h,bz+vz*h],[ax+vx*h,ay+vy*h,az+vz*h],c)};
+const MAP_GHOST={
+  id:'ghost',name:'Geisterstadt',desc:'Verlassene Sowjetstadt: Plattenbauten bis aufs Dach, Schule, Supermarkt, leeres Freibad und ein Riesenrad.',
+  size:[260,190],seed:83,roundTime:480,
+  sky:[0x9aa2a6,0xcfd0cb],fog:[0xb6bab5,70,330],sun:[0.4,0.7,0.35,0xf0ece0,0.78],hemi:[0xd8dde0,0x5a5c50,0.74],
+  terrain(x,z,N){
+    let h=2;const p1=gsPoolH(x,z),p2=gsPoolH(-x,-z);if(p1!=null)h=Math.min(h,p1);if(p2!=null)h=Math.min(h,p2);
+    if(p1==null&&p2==null&&!gsRoad(x,z,3)&&!gsNearBld(x,z,4)&&Math.hypot(x,z)>30)h+=.35*Math.max(0,N.fbm(x*.04,z*.04)+N.fbm(-x*.04,-z*.04)); // overgrown mounds
+    h+=9*sstep(122,129,Math.abs(x))+9*sstep(87,94,Math.abs(z));
+    return h;
+  },
+  ground(x,z,h,s,n){
+    if(h<1.6)return((Math.floor(x)+Math.floor(z))&1)?0x8fa6aa:0x86a0a4;
+    if(s>.9)return 0x7a776f;
+    if(gsRoad(x,z))return n>.45?0x3e3e40:n<-.4?0x56564f:0x4a4a4c;
+    if(gsRoad(x,z,2.2))return n>.3?0x8f8b82:0x86837a;
+    if(Math.hypot(x,z)<28)return n>.25?0x8e8a80:0x9a968c;
+    if(gsNearBld(x,z,3))return n>.2?0x7e7a70:0x76736a;
+    return n>.4?0x7a8546:n<-.35?0x8a8a52:n<-.05?0x6c7a40:0x737f44;
+  },
+  spawn:[-124,-14,-112,14],
+  posts:[[-95,17,-64,-1,1,'Block 1 Dach','Block 4 Dach'],[-46,null,-63,-1,0,'Schule West','Schule Ost'],[-95,null,-23,-1,0,'Supermarkt West','Supermarkt Ost'],[-56,14,30,-1,1,'Block 2 Dach','Block 5 Dach'],
+    [-30,null,20,-1,0,'Autoscooter West','Autoscooter Ost'],[-41,-.5,67,-1,0,'Freibad West','Freibad Ost'],[-99,null,62,-1,0,'Garagen West','Garagen Ost'],[-103,11,26,-1,1,'Block 3 Dach','Block 6 Dach'],
+    [0,null,10,0,0,'Riesenrad Nord'],[0,null,-10,0,0,'Riesenrad Süd'],[-16,null,-38,0,0,'Platz Süd'],[16,null,38,0,0,'Platz Nord']],
+  build(w){
+    // ---- Ferris wheel in the plane z=0 (point symmetric by itself) ----
+    {const hub=16.5,R=12.5,WC=0xc8c2b4;
+     w._box(-4,1.7,-2.2,4,2.3,2.2,0x8a867c);
+     for(const zs of[-2.4,2.4])for(const xs of[-1,1]){w.beam([xs*8.5,2,zs],[0,hub,zs*.55],.45,WC);w._box(xs*8.5-.6,1.6,zs-.6,xs*8.5+.6,3.2,zs+.6,0x7a766c)}
+     w._box(-.4,hub-.4,-1.6,.4,hub+.4,1.6,0x6a665c);
+     const pts=[];for(let k=0;k<24;k++){const a=k/24*TAU;pts.push([Math.cos(a)*R,hub+Math.sin(a)*R])}
+     for(const zr of[-1.2,1.2]){for(let k=0;k<24;k++){const p=pts[k],q=pts[(k+1)%24];w.beam([p[0],p[1],zr],[q[0],q[1],zr],.22,WC)}
+       for(let k=0;k<12;k++){const p=pts[k*2];w.beam([0,hub,zr],[p[0],p[1],zr],.12,WC)}}
+     const GC=[0xb5462e,0xc9a23a,0x3f6fb0,0x4f8a5a];
+     for(let k=0;k<12;k++){const a=k/12*TAU,x=Math.cos(a)*R,y=hub+Math.sin(a)*R;w.beam([x,y,0],[x,y-1,0],.1,0x55585c);
+       w._box(x-.9,y-2.6,-.9,x+.9,y-1,.9,GC[(k*5)%4]);w._box(x-1,y-1.05,-1,x+1,y-.9,1,0x5d6266,0)}}
+    // ---- central plaza: benches and lamp posts round the wheel ----
+    for(let k=0;k<8;k++){const a=k/8*TAU+Math.PI/8,x=Math.cos(a)*22,z=Math.sin(a)*22;w._box(x-.25,2,z-.25,x+.25,7,z+.25,0x5a5e60);w._box(x-.4,6.8,z-.4,x+.4,7.1,z+.4,0xe8e2c8,0)}
+    w.sym(w=>{
+      const PNL=[0xb4b0a6,0xaaa69a,0xbcb5a8,0xa59f92],T=.35,g=2;
+      // Soviet panel block: rooms behind interior walls on every floor, stairs to the roof, floor bands, balconies, roof housing
+      const panel=(b,col,doors,parts,balc,fh=3)=>{const[x0,z0,x1,z1,fl]=b;
+        const r=w.building(x0,z0,x1,z1,g,fl,fh,{col,floor:0x7a7468,stair:0x8a857a,roofAccess:true,ground:true,doors});
+        const alongX=x1-x0>=z1-z0;
+        for(let k=0;k<fl;k++){const fy=g+k*fh;for(const p of parts){
+          if(alongX){const c=(z1-z0)/2-T/2;w.wall(x0+p,z0+T/2,x0+p,z1-T/2,fy,fh,.2,0x9c978c,[[c-.7,c+.7,0,2.3]])}
+          else{const c=(x1-x0)/2-T/2;w.wall(x0+T/2,z0+p,x1-T/2,z0+p,fy,fh,.2,0x9c978c,[[c-.7,c+.7,0,2.3]])}}}
+        for(let k=1;k<=fl;k++){const fy=g+k*fh;
+          if(alongX){w._box(x0-.06,fy-.32,z0-.06,x1+.06,fy-.12,z0+.12,0x8e8a80,0);w._box(x0-.06,fy-.32,z1-.12,x1+.06,fy-.12,z1+.06,0x8e8a80,0)}
+          else{w._box(x0-.06,fy-.32,z0-.06,x0+.12,fy-.12,z1+.06,0x8e8a80,0);w._box(x1-.12,fy-.32,z0-.06,x1+.06,fy-.12,z1+.06,0x8e8a80,0)}}
+        if(balc){const len=alongX?x1-x0:z1-z0-T,n=Math.floor((len-2)/4);
+          for(let k=1;k<fl;k++){const fy=g+k*fh;for(let i=0;i<n;i+=2){const c=2+(i+.5)*(len-4)/n;
+            if(alongX){const cx=x0+c;w._box(cx-1.1,fy-.15,z1+.17,cx+1.1,fy+.05,z1+1.3,0x9a968c);w.wall(cx-1.1,z1+1.3,cx+1.1,z1+1.3,fy+.05,.95,.1,col)}
+            else{const cz=z0+T/2+c;w._box(x0-1.3,fy-.15,cz-1.1,x0-.17,fy+.05,cz+1.1,0x9a968c);w.wall(x0-1.3,cz-1.1,x0-1.3,cz+1.1,fy+.05,.95,.1,col)}}}}
+        const rx=alongX?x0+(x1-x0)*.3:(x0+x1)/2-1.5,rz=alongX?(z0+z1)/2:z0+(z1-z0)*.62;w.box(rx,r,rz,3,2.4,3,0x8e8a80);
+        return r};
+      panel(GS_BLD.A,PNL[0],{z1:[[8,10],[24,26]],x0:[[5,7]]},[9,18,27],true);
+      panel(GS_BLD.B,PNL[1],{x1:[[13,15]],z1:[[5,7]],x0:[[24,26]]},[10,20],true);
+      panel(GS_BLD.C,PNL[2],{z0:[[7,9]],x1:[[4,6]]},[9],true);
+      // school: three floors, yellow plaster, wide entrance
+      panel(GS_BLD.S,0xc9b48a,{z1:[[10.5,13.5]],x0:[[5,7]]},[8,16],false,3.2);
+      // supermarket: one tall floor, broken glass front, shelves and tills
+      {const[x0,z0,x1,z1]=GS_BLD.M;w.building(x0,z0,x1,z1,g,1,4,{col:0xb8b4aa,floor:0x6e6a62,ground:true,doors:{x1:[[5,11]],z0:[[3,5]]}});
+       for(const x of[-101,-98.5,-91.5])w._box(x-.5,g,-29,x+.5,g+1.7,-19,0x8a6a4a);
+       for(const z of[-30,-25,-20])w._box(-89.6,g,z-.6,-88.6,g+1.05,z+.6,0x6a6e70);
+       w._box(x0+2,g+4.1,z1-.1,x1-2,g+5.3,z1+.1,0xb5462e,0)}
+      // garages: pairs of lock-ups, every other one open
+      for(const gx of[-112,-104,-96,-88])for(let j=0;j<2;j++){const x0=gx+j*3,x1=x0+3;
+        if((gx/8+j)&1){w._box(x0,g-.2,66,x0+.2,g+2.6,72,0x9c978c);w._box(x1-.2,g-.2,66,x1,g+2.6,72,0x9c978c);w._box(x0,g-.2,71.8,x1,g+2.6,72,0x9c978c);w._box(x0,g+2.4,66,x1,g+2.6,72,0x7a766c)}
+        else{w._box(x0,g-.2,66,x1,g+2.6,72,0x9c978c);w._box(x0+.25,g+.1,65.9,x1-.25,g+2.2,66,0x5a6a5a,0)}}
+      // bumper car hall: open sides, low rail, cars as cover
+      {const x0=-38,z0=14,x1=-22,z1=26;for(const x of[x0,(x0+x1)/2,x1])for(const z of[z0,z1])w._box(x-.2,g,z-.2,x+.2,g+4.2,z+.2,0x6a6e70);
+       w._box(x0-.4,g+4.2,z0-.4,x1+.4,g+4.5,z1+.4,0x8a3a2a);w._box(x0+.5,g-.2,z0+.5,x1-.5,g+.15,z1-.5,0x55575a);
+       w.wall(x0+.5,z0+.5,x1-.5,z0+.5,g,.75,.25,0x3f6fb0,[[3,5,0,.75],[10,12,0,.75]]);w.wall(x0+.5,z1-.5,x1-.5,z1-.5,g,.75,.25,0x3f6fb0,[[4,6,0,.75],[11,13,0,.75]]);
+       w.wall(x0+.5,z0+.6,x0+.5,z1-.6,g,.75,.25,0x3f6fb0,[[4,7,0,.75]]);w.wall(x1-.5,z0+.6,x1-.5,z1-.6,g,.75,.25,0x3f6fb0,[[4,7,0,.75]]);
+       const CC=[0xb5462e,0xc9a23a,0x3f8a5a,0x2f5fa8,0xd06a9a,0xe0e0d0];
+       [[4,4],[7.5,8.5],[12,3.5],[3.5,9],[11,9.5],[14,6.5]].forEach(([a,b],i)=>w._box(x0+a-.65,g+.15,z0+b-1,x0+a+.65,g+1.0,z0+b+1,CC[i]))}
+      // kiosks
+      for(const[x,z,c]of[[-18,-24,0x5b8fd0],[-44,30,0x8a9a5a]]){w.building(x-1.5,z-1.5,x+1.5,z+1.5,g,1,2.6,{col:c,floor:0x6e6a62,ground:true,doors:{z1:[[.8,2.2]]}})}
+      // empty open-air pool: coping, starting blocks, changing cabins
+      {const[x0,z0,x1,z1]=GS_POOL;w._box(x0-.4,g-.05,z0-.4,x1+.4,g+.08,z0,0xd8d4c8,0);w._box(x0-.4,g-.05,z1,x1+.4,g+.08,z1+.4,0xd8d4c8,0);w._box(x0-.4,g-.05,z0,x0,g+.08,z1,0xd8d4c8,0);
+       for(let z=z0+2;z<z1-1;z+=2.4)w._box(x0+.2,g,z-.4,x0+1,g+.7,z+.4,0xe8e4d8);
+       w.building(-28,62,-20,70,g,1,2.8,{col:0x8fb0b8,floor:0x6e6a62,ground:true,doors:{x0:[[2,4]],z0:[[3,5]]}})}
+      // wrecked bus on the avenue
+      {const x=-40,z=-46.5;w._box(x-6,g+.5,z-1.3,x+6,g+3.4,z+1.3,0xc9a23a);w._box(x-6.02,g+1.9,z-1.32,x+6.02,g+2.8,z+1.32,0x2e3436,0);
+       for(const a of[-4,4])for(const s of[-1,1])w._box(x+a-.55,g,s>0?z+.9:z-1.35,x+a+.55,g+1.1,s>0?z+1.35:z-.9,0x1e1e1e)}
+    },83);
+    // ---- outside sym (pairs placed explicitly): street lamps, overgrown birches and bushes ----
+    const FR=mulberry32(8383),both=(seed,fn)=>{w.mirror=false;w.rnd=mulberry32(seed);fn();w.mirror=true;w.rnd=mulberry32(seed);fn();w.mirror=false};
+    const TCg={bark:0x4a3a2a,pbark:0x7a4e30,bb:0xd8d5c8,dead:0x8a8478,log:0x6a5038,root:0x4a3a2a,sp:[0x22382a,0x274030,0x2b4530],pn:[0x34522c,0x3b5a30],bl:[0x6f8f3a,0x7d9a40,0x67863a],ba:[0xc9a83a,0xb8962f,0xd2b44a]};
+    const lamp=(x,z,dz)=>{w._box(x-.1,1.9,z-.1,x+.1,8,z+.1,0x5a5e60);w._box(x-.05,7.8,Math.min(z,z+dz),x+.05,7.95,Math.max(z,z+dz),0x5a5e60,0);w._box(x-.25,7.6,z+dz-.3,x+.25,7.85,z+dz+.3,0xe8e2c8,0)};
+    for(let x=-120;x<-30;x+=22)if(Math.abs(x+70)>8)both(1,()=>lamp(x,-40.6,-1.6));
+    for(let z=-88;z<90;z+=22)if(Math.abs(z+46)>8&&Math.abs(z-46)>8&&Math.abs(z)>8)both(1,()=>lamp(-64.6,z,0));
+    const sp=MAP_GHOST.spawn;
+    for(let i=0;i<420;i++){const x=-124+FR()*120,z=-92+FR()*184,r=FR(),u=FR(),seed=(FR()*4294967296)>>>0;
+      if(gsRoad(x,z,2.6)||gsNearBld(x,z,3.5)||Math.hypot(x,z)<31||(x<sp[2]+5&&z>sp[1]-5&&z<sp[3]+5)||!w.areaFree(x,z,1.1,1.1))continue;
+      if(r<.42)both(seed,()=>w.birch(x,z,8+u*7,TCg,u<.3));else if(r<.86)both(seed,()=>w.bush(x,z,1+u*.9,u<.5?0x4f6d30:0x5f7a38));else if(r<.93)both(seed,()=>w.spruce(x,z,10+u*6,TCg))}
+    w.mirror=false;w.rnd=mulberry32(97);
+    w.scatter({n:70,x0:-120,x1:-10,z0:-90,z1:90,gap:5,seed:831,kinds:[['car',3],['rock',2],['barrier',1.5],['tires',1],['crates',1],['barrels',1],['wall',1.5],['sand',1]],
+      cols:{rock:0x8a867c,wall:0xa9a59a,sand:0x9a8f6a},excl:(x,z)=>(x<sp[2]+4&&z>sp[1]-4&&z<sp[3]+4)||Math.hypot(x,z)<24||gsPoolH(x,z)!=null});
+  }
+};
+MAPS.splice(MAPS.findIndex(m=>m.event),0,MAP_GHOST);
+
 // ================= SETTINGS =================
 const SET={sens:1,fov:78,vol:.7,q:1,calls:1};
 try{Object.assign(SET,JSON.parse(localStorage.getItem('hitcall_set')||'{}'))}catch(e){}
@@ -1850,6 +1969,16 @@ function vmInit(){
     B(g,.05,.055,.28,0,.072,-.1,BK);B(g,.06,.06,.03,0,.072,-.25,BK);B(g,.06,.06,.03,0,.072,.05,BK);B(g,.06,.1,.22,0,-.03,.24,0x3b4130);B(g,.03,.035,.05,.04,.02,.02,0x777777)});
   mk([.16,-.195,-.42],[0,-.06,-.36],-.36,(g,s)=>{B(g,.06,.075,.3,0,0,-.02,BK);B(g,.05,.05,.42,0,.01,-.36,DG);B(g,.045,.04,.38,0,-.04,-.34,0x222222);B(g,.03,.03,.035,0,.01,-.585,OR);
     g.userData.pump=B(g,.065,.06,.16,0,-.04,-.36,0x3a3a36);B(g,.036,.1,.05,0,-.085,.08,BK,-.3);B(g,.055,.09,.22,0,-.02,.24,BK);B(g,.01,.02,.01,0,.05,-.5,0xdddddd)});
+  // AK-74: wooden furniture, curved mag, iron sights
+  mk([.16,-.19,-.42],[0,-.066,-.34],-.33,(g,s)=>{const WD=0x6a4024,MT=0x2a2a2a;B(g,.056,.07,.36,0,0,-.08,MT);B(g,.062,.062,.2,0,-.006,-.36,WD);B(g,.03,.028,.2,0,.042,-.33,MT);
+    B(g,.02,.02,.2,0,.004,-.56,BK);B(g,.028,.028,.04,0,.004,-.68,OR);B(g,.04,.14,.06,0,-.105,-.15,0xa0602a,.45);B(g,.036,.1,.05,0,-.085,.04,WD,-.3);B(g,.05,.08,.24,0,-.03,.22,WD,.12);
+    s.push(B(g,.016,.03,.02,0,.05,.0,BK),B(g,.01,.038,.01,0,.05,-.6,BK))});
+  // Glock 17: short slide and grip, both hands close together
+  mk([.12,-.125,-.36],[0,-.05,-.3],-.03,(g,s)=>{B(g,.034,.036,.2,0,0,-.06,0x1a1a1a);B(g,.03,.022,.17,0,-.027,-.07,0x262626);B(g,.017,.017,.02,0,0,-.17,OR);
+    B(g,.032,.1,.046,0,-.072,.01,0x1a1a1a,-.25);s.push(B(g,.008,.014,.01,0,.024,-.145,BK),B(g,.024,.014,.01,0,.024,.03,BK))});
+  // SR-25: tan rifle with magazine and a 2.6x scope
+  mk([.16,-.19,-.42],[0,-.072,-.3],-.38,(g,s)=>{const TN=0x5a5040;B(g,.058,.072,.42,0,0,-.08,TN);B(g,.058,.062,.3,0,-.002,-.44,TN);B(g,.022,.022,.2,0,.004,-.68,BK);B(g,.028,.028,.035,0,.004,-.79,OR);
+    B(g,.05,.055,.26,0,.072,-.1,BK);B(g,.06,.06,.03,0,.072,-.24,BK);B(g,.06,.06,.03,0,.072,.03,BK);B(g,.038,.1,.06,0,-.095,-.12,BK,.12);B(g,.036,.1,.05,0,-.085,.06,BK,-.3);B(g,.055,.09,.22,0,-.02,.24,TN)});
   for(const g of VM.guns){const hR=new THREE.Mesh(new THREE.BoxGeometry(.06,.085,.1),L(GL));hR.position.set(.012,-.075,.06);g.add(hR);const hL=new THREE.Mesh(new THREE.BoxGeometry(.075,.06,.1),L(GL));hL.position.set(-.01,-.05,g.userData.lhz);g.add(hL);
     const sl=new THREE.Mesh(new THREE.BoxGeometry(.09,.09,.3),L(0x8f7f5f));sl.position.set(.03,-.1,.22);g.add(sl);g.visible=false;VM.root.add(g)}
 }
@@ -1875,6 +2004,9 @@ const AU={ctx:null,master:null,noise:null,win:0,cnt:0,
       case 'smg':this.nz(o,t,.035,'bandpass',2900,1.2,.5);this.osc(o,t,.03,'square',190,90,.08);break;
       case 'lmg':this.nz(o,t,.055,'bandpass',1700,1,.65);this.osc(o,t,.045,'square',110,55,.14);break;
       case 'sniper':this.nz(o,t,.11,'lowpass',1500,.8,.9);this.osc(o,t,.12,'sine',170,45,.55);this.nz(o,t+.004,.03,'highpass',4500,1,.35);break;
+      case 'ak':this.nz(o,t,.05,'bandpass',1900,1,.6);this.osc(o,t,.04,'square',125,60,.12);this.nz(o,t+.01,.02,'highpass',4200,1,.14);break;
+      case 'pistol':this.nz(o,t,.03,'bandpass',3300,1.4,.5);this.osc(o,t,.025,'square',260,120,.07);this.nz(o,t+.05,.025,'bandpass',2200,2,.25);break;
+      case 'dmr':this.nz(o,t,.08,'lowpass',1900,.8,.8);this.osc(o,t,.09,'sine',210,60,.42);this.nz(o,t+.004,.025,'highpass',4800,1,.3);break;
       case 'shotgun':this.nz(o,t,.15,'lowpass',1100,.7,1);this.osc(o,t,.15,'sine',120,40,.6);break;
       case 'pump':this.nz(o,t+.16,.045,'bandpass',1700,2,.45);this.nz(o,t+.32,.05,'bandpass',1200,2,.5);break;
       case 'bolt':this.nz(o,t+.15,.04,'bandpass',2500,2,.4);this.nz(o,t+.38,.04,'bandpass',1800,2,.4);break;
@@ -1904,9 +2036,15 @@ const WPN=[
   {id:'aeg',name:'M4 AEG',short:'AEG',auto:true,rof:13,mag:30,reload:2.1,speed:100,drag:.3,g:9,flat:.4,hip:.006,ads:.0012,pellets:1,ps:0,zoom:1.45,botRange:62,botAcc:1,move:1,kick:.004,snd:'aeg',glen:.86,col:0x222222},
   {id:'smg',name:'MP5 SMG',short:'SMG',auto:true,rof:16,mag:40,reload:1.8,speed:90,drag:.38,g:9,flat:.3,hip:.008,ads:.0022,pellets:1,ps:0,zoom:1.3,botRange:42,botAcc:1.15,move:1.07,kick:.0032,snd:'smg',glen:.62,col:0x1c1c1c},
   {id:'lmg',name:'M249 LMG',short:'LMG',auto:true,rof:11,mag:100,reload:3.6,speed:100,drag:.3,g:9,flat:.4,hip:.014,ads:.0024,pellets:1,ps:0,zoom:1.4,botRange:66,botAcc:1.25,move:.86,kick:.005,snd:'lmg',glen:1.0,col:0x2e3326},
-  {id:'sniper',name:'VSR-10 Sniper',short:'SNIPER',auto:false,rof:1/1.15,mag:8,reload:2.6,speed:125,drag:.2,g:8,flat:.72,hip:.03,ads:.0005,pellets:1,ps:0,zoom:4.2,botRange:95,botAcc:.45,move:.95,kick:0,snd:'sniper',glen:1.05,col:0x3b4130},
+  {id:'sniper',name:'VSR-10 Sniper',short:'SNIPER',auto:false,rof:1/1.15,mag:8,reload:2.6,speed:125,drag:.2,g:8,flat:.72,hip:.03,ads:.0005,pellets:1,ps:0,zoom:4.2,botRange:95,botAcc:.45,move:.95,kick:0,snd:'sniper',glen:1.05,col:0x3b4130,scope:true},
   {id:'shotgun',name:'M870 Tri-Shot',short:'SHOTGUN',auto:false,rof:1/.8,mag:6,reload:2.8,speed:85,drag:.5,g:9,flat:.25,hip:.006,ads:.004,pellets:3,ps:.03,zoom:1.15,botRange:32,botAcc:1,move:1,kick:.02,snd:'shotgun',glen:.82,col:0x2c2a28},
+  {id:'ak',name:'AK-74 AEG',short:'AK',auto:true,rof:11,mag:30,reload:2.3,speed:104,drag:.29,g:9,flat:.42,hip:.0068,ads:.0014,pellets:1,ps:0,zoom:1.4,botRange:66,botAcc:1.05,move:.97,kick:.0055,snd:'ak',glen:.9,col:0x4a3020},
+  {id:'pistol',name:'Glock 17 GBB',short:'GLOCK',auto:false,rof:5.5,mag:20,reload:1.3,speed:82,drag:.42,g:9,flat:.25,hip:.0055,ads:.003,pellets:1,ps:0,zoom:1.12,botRange:30,botAcc:1.15,move:1.12,kick:.014,snd:'pistol',glen:.32,col:0x1a1a1a},
+  {id:'dmr',name:'SR-25 DMR',short:'DMR',auto:false,rof:2.8,mag:20,reload:2.4,speed:115,drag:.24,g:8.5,flat:.62,hip:.022,ads:.0008,pellets:1,ps:0,zoom:2.6,botRange:85,botAcc:.7,move:.94,kick:.01,snd:'dmr',glen:1.0,col:0x5a5040,scope:true},
 ];
+// bots: AEG 26 %, SMG 12, LMG 9, sniper 10, shotgun 10, AK 17, Glock 6, DMR 10
+const BOT_WPN=[.26,.38,.47,.57,.67,.84,.9,1];
+function botWpn(){const r=Math.random();let i=0;while(i<BOT_WPN.length-1&&r>BOT_WPN[i])i++;return i}
 // hop-up: BB flies flat for wp.flat seconds, then gravity ramps in
 const bbG=(wp,age)=>wp.g*clamp((age-wp.flat)*2.2,0,1.7);
 const DIFF=[{name:'Leicht',err:.06,react:1.0,vision:68,lead:.3,turn:3.6},{name:'Normal',err:.036,react:.62,vision:84,lead:.6,turn:5.5},{name:'Schwer',err:.022,react:.4,vision:100,lead:.9,turn:8}];
@@ -2109,7 +2247,7 @@ function setupRound(humans){ // humans: [{team,ent?}] for mp; builds entities
   for(const h of humans){const e=h.ent;e.idx=G.E.length;e.squad=null;G.E.push(e);if(!sq)placeEnt(e,pts[e.team][used[e.team]++]||pts[e.team][0])}
   let slot=0;
   for(let t=0;t<2;t++){for(let i=counts[t];i<per;i++){
-    const e=newEnt('bot',t,botName(slot,G.seed));e.slot=slot++;e.idx=G.E.length;const r=Math.random();e.wpn=r<.42?0:r<.56?1:r<.66?2:r<.82?3:4;e.spd=4.3*(.9+Math.random()*.2);
+    const e=newEnt('bot',t,botName(slot,G.seed));e.slot=slot++;e.idx=G.E.length;e.wpn=botWpn();e.spd=4.3*(.9+Math.random()*.2);
     G.E.push(e);if(!sq){placeEnt(e,pts[t][used[t]++]||pts[t][0]);mkAI(e)}}}
   if(sq)setupSquads();
   finishSetup();
@@ -2137,7 +2275,7 @@ function brSpawnPoints(n){
 function setupBR(humans){
   const pts=brSpawnPoints(BR_TOTAL);let k=0;
   for(const h of humans){const e=h.ent;e.team=0;e.idx=G.E.length;e.squad=null;G.E.push(e);placeEnt(e,pts[k++])}
-  let slot=0;for(let i=humans.length;i<BR_TOTAL;i++){const e=newEnt('bot',0,botName(slot,G.seed));e.slot=slot++;e.idx=G.E.length;const r=Math.random();e.wpn=r<.4?0:r<.56?1:r<.66?2:r<.82?3:4;e.spd=4.3*(.9+Math.random()*.2);G.E.push(e);placeEnt(e,pts[k++])}
+  let slot=0;for(let i=humans.length;i<BR_TOTAL;i++){const e=newEnt('bot',0,botName(slot,G.seed));e.slot=slot++;e.idx=G.E.length;e.wpn=botWpn();e.spd=4.3*(.9+Math.random()*.2);G.E.push(e);placeEnt(e,pts[k++])}
   zoneInit();
   for(const e of G.E){e.out=0;e.yaw=e.tyaw=Math.atan2(-(G.zone.nx-e.x),-(G.zone.nz-e.z))+(Math.random()-.5)*1.4;if(e.kind==='bot')mkAI(e)}
 }
@@ -2239,7 +2377,7 @@ function aliveCounts(){const c=[0,0];for(const e of G.E)if(e.alive&&!e.gone)c[e.
 // ================= BOT AI =================
 const _cand=[];
 function botScan(e){
-  const ai=e.ai,D=DIFF[G.diff];const eye=e.y+(e.crouch?EYE_CR:EYE_ST);const vr=D.vision*(WPN[e.wpn].id==='sniper'?1.15:1),vr2=vr*vr;
+  const ai=e.ai,D=DIFF[G.diff];const eye=e.y+(e.crouch?EYE_CR:EYE_ST);const vr=D.vision*(WPN[e.wpn].scope?1.13:1),vr2=vr*vr;
   ai.vis=false;
   if(ai.tgt&&ai.tgt.alive&&!ai.tgt.gone){const o=ai.tgt;const d2=(o.x-e.x)**2+(o.z-e.z)**2;
     if(d2<vr2*1.2&&G.world.los(e.x,eye,e.z,o.x,o.y+(o.crouch?.85:1.3),o.z)){ai.vis=true;ai.seeT=G.time;ai.lastSeen[0]=o.x;ai.lastSeen[1]=o.y;ai.lastSeen[2]=o.z;spot(e,o);return}}
@@ -2379,7 +2517,7 @@ function botUpdate(e,dt){
       const err=D.err*(1+dh/80)*(1+ai.settle*2.2)*(e.mv>.3?1.5:1)*(Math.hypot(aim.vx,aim.vz)>2?1.25:1)*wp.botAcc*(aim.crouch?1.1:1)*xErr*(ai.mode==='incover'?.65:1);
       fireWeapon(e,e.yaw+gauss()*err,e.pitch+gauss()*err*.8);
       if(wp.auto){if(--ai.burst<=0){ai.burst=(wp.id==='lmg'?7:3)+((Math.random()*(wp.id==='lmg'?12:7))|0);ai.burstCD=.2+Math.random()*.55}}
-      else ai.burstCD=wp.id==='sniper'?.5+Math.random()*.9:.25+Math.random()*.4;
+      else ai.burstCD=wp.id==='sniper'?.5+Math.random()*.9:wp.id==='dmr'?.35+Math.random()*.5:.25+Math.random()*.4;
     }
   }
   // unreachable-from-here check (every 2 s)
@@ -2948,7 +3086,7 @@ function menuCamera(dt){
 function updateVM(dt){
   const e=G.me;if(!e||!e.alive){VM.root.visible=false;return}
   const wp=WPN[e.wpn];const canAds=INP.rmb&&e.reloadT<=0&&e.switchT<=0;
-  const isSn=wp.id==='sniper';VM.t.ads=lerp(VM.t.ads,canAds?1:0,1-Math.exp(-dt*(isSn?11:15)));VM.t.kick*=Math.exp(-dt*13);
+  const isSn=!!wp.scope;VM.t.ads=lerp(VM.t.ads,canAds?1:0,1-Math.exp(-dt*(isSn?11:15)));VM.t.kick*=Math.exp(-dt*13);
   VM.t.swayX=lerp(VM.t.swayX,clamp(-INP.mdxF*.0005,-.04,.04),.2);VM.t.swayY=lerp(VM.t.swayY,clamp(INP.mdyF*.0005,-.04,.04),.2);
   for(let i=0;i<VM.guns.length;i++)VM.guns[i].visible=i===e.wpn;
   const g=VM.guns[e.wpn],u=g.userData,a=VM.t.ads;
@@ -3044,7 +3182,7 @@ function updateHUD(dt){
     drawMini();updateBoard();
   }
   $('reload').firstChild.style.width=(me.reloadT>0?(1-me.reloadT/WPN[me.wpn].reload)*100:0)+'%';
-  const wpn=WPN[me.wpn];const showX=me.alive&&!(wpn.id==='sniper'&&VM.t.ads>.6);$('xh').hidden=!showX;
+  const wpn=WPN[me.wpn];const showX=me.alive&&!(wpn.scope&&VM.t.ads>.6);$('xh').hidden=!showX;
   if(showX){const sp=playerSpread(me);const px=sp*(window.innerHeight/2)/Math.tan(camera.fov*Math.PI/360);$('xh').style.setProperty('--g',(3+px)+'px');
     const lines=VM.t.ads<.5||wpn.id==='shotgun';for(let i=0;i<4;i++)$('xh').children[i].style.opacity=lines?1:0;$('xh').classList.toggle('rd',!lines)}
   $('wbox').style.opacity=me.alive?1:.35;
@@ -3077,7 +3215,7 @@ window.addEventListener('keydown',ev=>{
   INP.k[ev.code]=true;
   if(ev.code==='Space'){INP.jump=true;ev.preventDefault()}
   if(ev.code==='Tab'){INP.tab=true;ev.preventDefault();hudT=0}
-  const dg=/^Digit([1-5])$/.exec(ev.code);if(dg)switchWeapon(+dg[1]-1);
+  const dg=/^Digit([1-8])$/.exec(ev.code);if(dg)switchWeapon(+dg[1]-1);
 });
 window.addEventListener('keyup',ev=>{INP.k[ev.code]=false;if(ev.code==='Tab'){INP.tab=false;hudT=0}});
 window.addEventListener('blur',()=>{INP.k={};INP.lmb=INP.rmb=false});
